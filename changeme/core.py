@@ -17,29 +17,7 @@ import yaml
 PERSISTENT_QUEUE = "data.db"  # Instantiated in the scan_engine class
 
 
-def banner(version):
-    b = (
-        """
- #####################################################
-#       _                                             #
-#   ___| |__   __ _ _ __   __ _  ___ _ __ ___   ___   #
-#  / __| '_ \ / _` | '_ \ / _` |/ _ \ '_ ` _ \ / _ \\  #
-# | (__| | | | (_| | | | | (_| |  __/ | | | | |  __/  #
-#  \___|_| |_|\__,_|_| |_|\__, |\___|_| |_| |_|\___|  #
-#                         |___/                       #
-#  v%s                                             #
-#  Default Credential Scanner by @ztgrace             #
- #####################################################
-    """
-        % version
-    )
-
-    return b
-
-
 def main():
-    print(banner(version.__version__))
-
     args = parse_args()
     init_logging(args["args"].verbose, args["args"].debug, args["args"].log)
     config = Config(args["args"], args["parser"])
