@@ -5,7 +5,7 @@ from requests.auth import HTTPBasicAuth
 class HTTPBasicAuthScanner(HTTPGetScanner):
     pass
 
-    def _make_request(self):
+    def _make_request(self) -> None:
         self.logger.debug(f"Requesting {self.target}")
         self.response = self.request.get(
             self.target,

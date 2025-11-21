@@ -1,16 +1,28 @@
 from pysnmp.hlapi import *
 from .scanner import Scanner
+from typing import Dict, Any, TYPE_CHECKING
+from ..target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class SNMP(Scanner):
-    def __init__(self, cred, target, username, password, config):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        username: str,
+        password: str,
+        config: "Config",
+    ) -> None:
         super(SNMP, self).__init__(cred, target, config, username, password)
 
-    def fingerprint(self):
+    def fingerprint(self) -> bool:
         # Don't fingerprint since it's UDP
         return True
 
-    def _check(self):
+    def _check(self) -> str:
         iterator = getCmd(
             SnmpEngine(),
             CommunityData(self.password),
@@ -37,5 +49,5 @@ class SNMP(Scanner):
 
         return evidence
 
-    def _mkscanner(self, cred, target, u, p, config):
+    def _mkscanner(self, cred: Dict[str, Any], target: Target, u: str, p: str, config: "Config") -> "SNMP":
         return SNMP(cred, target, u, p, config)

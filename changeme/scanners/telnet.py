@@ -1,13 +1,25 @@
 from .scanner import Scanner
 import telnetlib3.telnetlib as telnetlib
 import time
+from typing import Dict, Any, TYPE_CHECKING
+from ..target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class Telnet(Scanner):
-    def __init__(self, cred, target, username, password, config):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        username: str,
+        password: str,
+        config: "Config",
+    ) -> None:
         super(Telnet, self).__init__(cred, target, config, username, password)
 
-    def _check(self):
+    def _check(self) -> str:
         try:
             telnet = telnetlib.Telnet(str(self.target.host))
             timeout_allowed = int(self.cred["auth"]["blockingio_timeout"])
@@ -79,5 +91,5 @@ class Telnet(Scanner):
             str(str_to_trim).replace(" ", "").replace(r"\s", "").replace("\t", "").replace("\r", "").replace("\n", "")
         )
 
-    def _mkscanner(self, cred, target, u, p, config):
+    def _mkscanner(self, cred: Dict[str, Any], target: Target, u: str, p: str, config: "Config") -> "Telnet":
         return Telnet(cred, target, u, p, config)

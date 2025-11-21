@@ -5,14 +5,19 @@ from .scanner import Scanner
 import re
 from selenium import webdriver
 from time import sleep
+from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
+import requests
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 try:
     # Python 3
     from urllib.parse import urlencode, urlparse
 except ImportError:
     # Python 2
-    from urllib import urlencode
-    from urlparse import urlparse
+    from urllib import urlencode  # type: ignore
+    from urlparse import urlparse  # type: ignore
 
 HEADERS_USERAGENTS = [
     "Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.3) Gecko/20090913 Firefox/3.5.3",
@@ -29,19 +34,27 @@ HEADERS_USERAGENTS = [
 ]
 
 
-def get_useragent():
+def get_useragent() -> str:
     return random.choice(HEADERS_USERAGENTS)
 
 
 class HTTPGetScanner(Scanner):
-    def __init__(self, cred, target, username, password, config, cookies):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Any,
+        username: str,
+        password: str,
+        config: "Config",
+        cookies: Optional[Dict[str, str]],
+    ) -> None:
         super(HTTPGetScanner, self).__init__(cred, target, config, username, password)
-        self.cred = cred
-        self.config = config
-        self.cookies = cookies
-        self.headers = dict()
-        self.request = session()
-        self.response = None
+        self.cred: Dict[str, Any] = cred
+        self.config: "Config" = config
+        self.cookies: Optional[Dict[str, str]] = cookies
+        self.headers: Dict[str, str] = dict()
+        self.request: requests.Session = session()
+        self.response: Optional[requests.Response] = None
 
         headers = self.cred["auth"].get("headers", dict())
         custom_ua = False
@@ -61,10 +74,10 @@ class HTTPGetScanner(Scanner):
         # make the cred have only one u:p combo
         self.cred["auth"]["credentials"] = [{"username": self.username, "password": self.password}]
 
-    def __reduce__(self):
+    def __reduce__(self) -> Tuple[type, Tuple[Any, ...]]:
         return self.__class__, (self.cred, self.target, self.username, self.password, self.config, self.cookies)
 
-    def scan(self):
+    def scan(self) -> Optional[Dict[str, Any]]:
         try:
             self._make_request()
         except Exception as e:
@@ -83,7 +96,7 @@ class HTTPGetScanner(Scanner):
 
         return self.check_success()
 
-    def check_success(self):
+    def check_success(self) -> Optional[Dict[str, Any]]:
         match = False
         success = self.cred["auth"]["success"]
 
@@ -136,7 +149,7 @@ class HTTPGetScanner(Scanner):
             )
             return False
 
-    def _check_fingerprint(self):
+    def _check_fingerprint(self) -> bool:
         self.logger.debug("_check_fingerprint")
         self.request = session()
         self.response = self.request.get(
@@ -150,7 +163,7 @@ class HTTPGetScanner(Scanner):
         self.logger.debug("_check_fingerprint", f"{self.target} - {self.response.status_code}")
         return self.fingerprint.match(self.response)
 
-    def _make_request(self):
+    def _make_request(self) -> None:
         self.logger.debug("_make_request")
         data = self.render_creds(self.cred)
         qs = urlencode(data)
@@ -165,7 +178,7 @@ class HTTPGetScanner(Scanner):
             cookies=self.cookies,
         )
 
-    def render_creds(self, candidate, csrf=None):
+    def render_creds(self, candidate: Dict[str, Any], csrf: Optional[str] = None) -> Optional[Dict[str, str]]:
         """
         Return a list of dicts with post/get data and creds.
 
@@ -207,7 +220,7 @@ class HTTPGetScanner(Scanner):
         else:  # raw post
             return None
 
-    def _get_parameter_dict(self, auth):
+    def _get_parameter_dict(self, auth: Dict[str, Any]) -> Dict[str, Any]:
         params = dict()
         data = auth.get("post", auth.get("get", None))
         for k in list(data.keys()):
@@ -217,12 +230,12 @@ class HTTPGetScanner(Scanner):
         return params
 
     @staticmethod
-    def get_base_url(req):
+    def get_base_url(req: str) -> str:
         parsed = urlparse(req)
         url = f"{parsed[0]}://{parsed[1]}"
         return url
 
-    def _screenshot(self, target):
+    def _screenshot(self, target: Any) -> str:
         self.logger.debug(f"Screenshotting {self.target}")
         # Set up the selenium webdriver
         # This feels like it will have threading issues

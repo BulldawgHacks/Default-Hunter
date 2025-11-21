@@ -1,12 +1,24 @@
 from pymongo import MongoClient
 from .scanner import Scanner
+from typing import Dict, Any, TYPE_CHECKING
+from ..target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class Mongodb(Scanner):
-    def __init__(self, cred, target, username, password, config):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        username: str,
+        password: str,
+        config: "Config",
+    ) -> None:
         super(Mongodb, self).__init__(cred, target, config, username, password)
 
-    def _check(self):
+    def _check(self) -> str:
         u_p = ""
         if self.username or self.password:
             u_p = f"{self.username}:{self.password}@"
@@ -17,5 +29,5 @@ class Mongodb(Scanner):
 
         return evidence
 
-    def _mkscanner(self, cred, target, u, p, config):
+    def _mkscanner(self, cred: Dict[str, Any], target: Target, u: str, p: str, config: "Config") -> "Mongodb":
         return Mongodb(cred, target, u, p, config)

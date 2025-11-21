@@ -6,13 +6,25 @@ except ImportError:
     HAS_REDIS = False
 
 from .scanner import Scanner
+from typing import Dict, Any, TYPE_CHECKING
+from ..target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class RedisScanner(Scanner):
-    def __init__(self, cred, target, username, password, config):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        username: str,
+        password: str,
+        config: "Config",
+    ) -> None:
         super(RedisScanner, self).__init__(cred, target, config, username, password)
 
-    def _check(self):
+    def _check(self) -> str:
         if not HAS_REDIS:
             return "redis module not installed - install with: pip install redis"
 
@@ -22,5 +34,5 @@ class RedisScanner(Scanner):
 
         return evidence
 
-    def _mkscanner(self, cred, target, u, p, config):
+    def _mkscanner(self, cred: Dict[str, Any], target: Target, u: str, p: str, config: "Config") -> "RedisScanner":
         return RedisScanner(cred, target, u, p, config)

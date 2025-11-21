@@ -1,7 +1,10 @@
 import logging
 import socket
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from changeme.target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class Scanner(object):
@@ -9,7 +12,7 @@ class Scanner(object):
         self,
         cred: Dict[str, Any],
         target: Target,
-        config: Any,
+        config: "Config",
         username: str,
         password: str,
     ) -> None:
@@ -18,7 +21,7 @@ class Scanner(object):
         self.target: Target = target
         if self.target.port is None:
             self.target.port = self.cred["default_port"]
-        self.config: Any = config
+        self.config: "Config" = config
         self.username: str = username
         self.password: str = password
 

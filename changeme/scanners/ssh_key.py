@@ -2,14 +2,26 @@ import logging
 import paramiko
 from .ssh import SSH
 from io import StringIO
+from typing import Dict, Any, TYPE_CHECKING
+from ..target import Target
+
+if TYPE_CHECKING:
+    from ..core import Config
 
 
 class SSHKey(SSH):
-    def __init__(self, cred, target, username, key, config):
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        username: str,
+        key: str,
+        config: "Config",
+    ) -> None:
         super(SSHKey, self).__init__(cred, target, username, key, config)
         self.logger = logging.getLogger("changeme")
 
-    def _check(self):
+    def _check(self) -> str:
         fake = StringIO(self.password)
         if "RSA PRIVATE KEY" in self.password:
             key = paramiko.RSAKey.from_private_key(fake)
@@ -26,5 +38,5 @@ class SSHKey(SSH):
         self.password = "Private Key"
         return evidence
 
-    def _mkscanner(self, cred, target, u, p, config):
+    def _mkscanner(self, cred: Dict[str, Any], target: Target, u: str, p: str, config: "Config") -> "SSHKey":
         return SSHKey(cred, target, u, p, config)
