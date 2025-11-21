@@ -78,9 +78,7 @@ class HttpFingerprint:
             cookies=self.cookies,
         )
 
-    def _get_csrf_token(
-        self, res: requests.Response, cred: Dict[str, Any]
-    ) -> Optional[str]:
+    def _get_csrf_token(self, res: requests.Response, cred: Dict[str, Any]) -> Optional[str]:
         name = cred["auth"].get("csrf", False)
         if name:
             tree = html.fromstring(res.content)
@@ -95,9 +93,7 @@ class HttpFingerprint:
 
         return csrf
 
-    def _get_session_id(
-        self, res: requests.Response, cred: Dict[str, Any]
-    ) -> Optional[Dict[str, str]]:
+    def _get_session_id(self, res: requests.Response, cred: Dict[str, Any]) -> Optional[Dict[str, str]]:
         cookie = cred["auth"].get("sessionid", False)
 
         if cookie:
@@ -149,18 +145,14 @@ class HttpFingerprint:
 
                 sessionid = self._get_session_id(self.res, cred)
                 if cred["auth"].get("sessionid") and not sessionid:
-                    self.logger.error(
-                        f"Missing session cookie {cred['auth'].get('sessionid')} for {self.res.url}"
-                    )
+                    self.logger.error(f"Missing session cookie {cred['auth'].get('sessionid')} for {self.res.url}")
                     return
 
                 for pair in cred["auth"]["credentials"]:
                     for u in cred["auth"]["url"]:  # pass in the auth url
                         target = deepcopy(self.target)
                         target.url = u
-                        self.logger.debug(
-                            f"Building {cred['name']} {pair['username']}:{pair['password']}, {target}"
-                        )
+                        self.logger.debug(f"Building {cred['name']} {pair['username']}:{pair['password']}, {target}")
 
                         if cred["auth"]["type"] == "get":
                             scanners.append(
@@ -203,9 +195,7 @@ class HttpFingerprint:
         return scanners
 
     @staticmethod
-    def build_fingerprints(
-        targets: Any, creds: List[Dict[str, Any]], config: Any
-    ) -> List["HttpFingerprint"]:
+    def build_fingerprints(targets: Any, creds: List[Dict[str, Any]], config: Any) -> List["HttpFingerprint"]:
         fingerprints = list()
         logger = logging.getLogger("changeme")
         # Build a set of unique fingerprints
@@ -229,7 +219,7 @@ class HttpFingerprint:
                     t.url = url
 
                     hfp = HttpFingerprint(t, fp.get("headers", None), fp.get("cookie", None), config)
-                    logger.debug(f"Adding {hfp.target} to fingerprint list")
+                    logger.debug(f"Adding to fingerprint list: {c.get('name')} [{t}]")
                     fingerprints.append(hfp)
 
         return fingerprints

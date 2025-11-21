@@ -7,6 +7,21 @@ from .target import Target
 import time
 from typing import List, Dict, Any, Set
 
+# scanner_map maps the friendly proto:// name to the actual class name
+SCANNER_MAP = {
+    "ssh": "SSH",
+    "ssh_key": "SSHKey",
+    "ftp": "FTP",
+    "memcached": "MemcachedScanner",
+    "mongodb": "Mongodb",
+    "mssql": "MSSQL",
+    "mysql": "MySQL",
+    "postgres": "Postgres",
+    "redis": "RedisScanner",
+    "snmp": "SNMP",
+    "telnet": "Telnet",
+}
+
 
 class ScanEngine(object):
     def __init__(self, creds: List[Dict[str, Any]], config: Any) -> None:
@@ -34,7 +49,7 @@ class ScanEngine(object):
             self.config.threads if self.fingerprints.qsize() > self.config.threads else self.fingerprints.qsize()
         )
 
-        self.logger.debug(f"Number of procs: {num_procs}")
+        self.logger.debug(f"Number of threads: {num_procs}")
         self.total_fps = self.fingerprints.qsize()
         procs = [mp.Process(target=self.fingerprint_targets) for i in range(num_procs)]
 
@@ -166,24 +181,9 @@ class ScanEngine(object):
 
         self.logger.info(f"Configured protocols: {self.config.protocols}")
 
-        # scanner_map maps the friendly proto:// name to the actual class name
-        scanner_map = {
-            "ssh": "SSH",
-            "ssh_key": "SSHKey",
-            "ftp": "FTP",
-            "memcached": "MemcachedScanner",
-            "mongodb": "Mongodb",
-            "mssql": "MSSQL",
-            "mysql": "MySQL",
-            "postgres": "Postgres",
-            "redis": "RedisScanner",
-            "snmp": "SNMP",
-            "telnet": "Telnet",
-        }
-
         for target in self.targets:
             for cred in self.creds:
-                for proto, classname in scanner_map.items():
+                for proto, classname in SCANNER_MAP.items():
                     if cred["protocol"] == proto and (proto in self.config.protocols or self.config.all):
                         t = Target(host=target.host, port=target.port, protocol=proto)
                         fingerprints.append(globals()[classname](cred, t, self.config, "", ""))

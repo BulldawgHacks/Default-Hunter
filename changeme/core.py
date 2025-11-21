@@ -7,18 +7,21 @@ import re
 from .report import Report
 import requests
 from requests import ConnectionError
+
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
 except ImportError:
     from urllib3.exceptions import InsecureRequestWarning  # type: ignore
-from .scan_engine import ScanEngine
+from .scan_engine import ScanEngine, SCANNER_MAP
 from . import schema
 import sys
 from . import version
 import yaml
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Union
 
 PERSISTENT_QUEUE = "data.db"  # Instantiated in the scan_engine class
+
+all_protocols = list(SCANNER_MAP.keys())
 
 
 def main() -> Optional[ScanEngine]:
@@ -69,9 +72,7 @@ def main() -> Optional[ScanEngine]:
     return s
 
 
-def init_logging(
-    verbose: bool = False, debug: bool = False, logfile: Optional[str] = None
-) -> logging.Logger:
+def init_logging(verbose: bool = False, debug: bool = False, logfile: Optional[str] = None) -> logging.Logger:
     """
     Logging levels:
         - Critical: Default credential found
@@ -134,6 +135,7 @@ def init_logging(
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)  # type: ignore
     except AttributeError:
         import urllib3
+
         urllib3.disable_warnings(InsecureRequestWarning)  # type: ignore
 
     return logger
@@ -157,7 +159,7 @@ class Config(object):
     fingerprint: bool
     delay: int
     all: bool
-    protocols: Any  # Can be string or list
+    protocols: Union[str, list[str]]
     fresh: bool
     name: Optional[str]
     category: Optional[str]
@@ -227,7 +229,7 @@ class Config(object):
         if self.all:
             self.protocols = "all"
 
-        logger.debug(self.protocols)
+        logger.debug("Protocols: {self.protocols}")
 
         if self.output and which("phantomjs") is None:
             logger.warning("phantomjs is not in your path, screenshots will not work")
@@ -276,7 +278,7 @@ def parse_args() -> Dict[str, Any]:
     ap.add_argument(
         "--protocols",
         type=str,
-        help="Comma separated list of protocols to test: http,ssh,ssh_key. Defaults to http.",
+        help=f"Comma separated list of protocols to test: {','.join(all_protocols)}. Defaults to http.",
         default="http",
     )
     ap.add_argument(
