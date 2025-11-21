@@ -1,25 +1,34 @@
 import logging
 import socket
+from typing import Dict, Any, Optional, List
+from changeme.target import Target
 
 
 class Scanner(object):
-    def __init__(self, cred, target, config, username, password):
-        self.logger = logging.getLogger("changeme")
-        self.cred = cred
-        self.target = target
+    def __init__(
+        self,
+        cred: Dict[str, Any],
+        target: Target,
+        config: Any,
+        username: str,
+        password: str,
+    ) -> None:
+        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.cred: Dict[str, Any] = cred
+        self.target: Target = target
         if self.target.port is None:
             self.target.port = self.cred["default_port"]
-        self.config = config
-        self.username = username
-        self.password = password
+        self.config: Any = config
+        self.username: str = username
+        self.password: str = password
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return id(self)
 
-    def scan(self):
+    def scan(self) -> Optional[Dict[str, Any]]:
         return self.check_success()
 
-    def fingerprint(self):
+    def fingerprint(self) -> bool:
         if self.target.port is None:
             self.target.port = self.cred["default_port"]
         try:
@@ -36,13 +45,13 @@ class Scanner(object):
             self.logger.debug(str(e))
             return False
 
-    def get_scanners(self, creds):
+    def get_scanners(self, creds: List[Dict[str, Any]]) -> List["Scanner"]:
         scanners = list()
         for pair in self.cred["auth"]["credentials"]:
             scanners.append(self._mkscanner(self.cred, self.target, pair["username"], pair["password"], self.config))
         return scanners
 
-    def check_success(self):
+    def check_success(self) -> Optional[Dict[str, Any]]:
         try:
             evidence = self._check()
             self.logger.critical(
@@ -65,18 +74,20 @@ class Scanner(object):
             self.logger.debug("%s Exception: %s" % (type(e).__name__, str(e)))
             return False
 
-    def _check(self):
+    def _check(self) -> Any:
         raise NotImplementedError("A Scanner class needs to implement a _check method.")
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__
         state["logger"] = None  # Need to clear the logger when serializing otherwise mp.Queue blows up
         return state
 
-    def __setstate__(self, d):
+    def __setstate__(self, d: Dict[str, Any]) -> None:
         self.__dict__ = d
         self.logger = logging.getLogger("changeme")
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Scanner):
+            return False
         return self.__dict__ == other.__dict__
         # return (str(self.target) + self.username + self.password) == (other.target + other.username + other.password)

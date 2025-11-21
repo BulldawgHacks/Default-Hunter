@@ -8,17 +8,19 @@ import os
 import re
 import sys
 from tabulate import tabulate
+from typing import Optional, List, Dict, Any
+from multiprocessing import Queue
 
 
 class Report:
-    def __init__(self, queue, output):
-        self.results = self._convert_q2list(queue)
-        self.output = output
-        self.logger = logging.getLogger("changeme")
+    def __init__(self, queue: Queue, output: Optional[str]) -> None:
+        self.results: List[Dict[str, Any]] = self._convert_q2list(queue)
+        self.output: Optional[str] = output
+        self.logger: logging.Logger = logging.getLogger("changeme")
 
     def render_csv(
         self,
-    ):
+    ) -> None:
         fname = self.output
         if not re.match(r".*\.csv$", fname):
             fname += ".csv"
@@ -31,7 +33,7 @@ class Report:
 
         self.logger.critical("%i credentials written to %s" % (len(self.results), fname))
 
-    def render_json(self):
+    def render_json(self) -> None:
         # convert the Target classes to a string so it can be json'd
         res = deepcopy(self.results)
         for r in res:
@@ -50,7 +52,7 @@ class Report:
 
         self.logger.critical("%i credentials written to %s" % (len(self.results), fname))
 
-    def print_results(self):
+    def print_results(self) -> None:
         if len(self.results) > 0:
             results = deepcopy(self.results)
             for r in results:
@@ -78,7 +80,7 @@ class Report:
         else:
             print("No default credentials found")
 
-    def render_html(self):
+    def render_html(self) -> None:
         template_loader = jinja2.FileSystemLoader(searchpath=self.get_template_path())
         template_env = jinja2.Environment(loader=template_loader)
         report_template = template_env.get_template("report.j2")
@@ -96,12 +98,12 @@ class Report:
         self.logger.critical("%i credentials written to %s" % (len(self.results), fname))
 
     @staticmethod
-    def get_template_path():
+    def get_template_path() -> str:
         PATH = os.path.dirname(os.path.abspath(__file__))
         template_path = os.path.join(PATH, "templates")
         return template_path
 
-    def _convert_q2list(self, q):
+    def _convert_q2list(self, q: Queue) -> List[Dict[str, Any]]:
         items = list()
         while not q.qsize() == 0:
             i = q.get()

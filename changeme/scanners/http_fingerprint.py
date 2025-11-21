@@ -8,17 +8,24 @@ import logging
 from lxml import html
 import re
 import requests
+from typing import Optional, Dict, Any, List
 
 
 class HttpFingerprint:
-    def __init__(self, target, headers, cookies, config):
-        self.target = target  # changeme.target.Target()
-        self.headers = headers
-        self.cookies = cookies
-        self.config = config
-        self.logger = logging.getLogger("changeme")
-        self.res = None
-        self.req = requests.Session()
+    def __init__(
+        self,
+        target: Target,
+        headers: Optional[Dict[str, str]],
+        cookies: Optional[Dict[str, str]],
+        config: Any,
+    ) -> None:
+        self.target: Target = target
+        self.headers: Optional[Dict[str, str]] = headers
+        self.cookies: Optional[Dict[str, str]] = cookies
+        self.config: Any = config
+        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.res: Optional[requests.Response] = None
+        self.req: requests.Session = requests.Session()
 
     def __getstate__(self):
         state = self.__dict__
@@ -29,12 +36,14 @@ class HttpFingerprint:
         self.__dict__ = d
         self.logger = logging.getLogger("changeme")
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(str(self.target) + str(self.headers) + str(self.cookies))
 
-    def __eq__(self, other):
-        s = dict()
-        o = dict()
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HttpFingerprint):
+            return False
+        s: Dict[str, Any] = dict()
+        o: Dict[str, Any] = dict()
         s["target"] = self.target
         s["headers"] = self.headers
         s["cookies"] = self.cookies
@@ -43,7 +52,7 @@ class HttpFingerprint:
         o["cookies"] = other.cookies
         return s == o
 
-    def fingerprint(self):
+    def fingerprint(self) -> bool:
         try:
             self._fp()
         except Exception as e:
@@ -59,7 +68,7 @@ class HttpFingerprint:
 
         return True
 
-    def _fp(self):
+    def _fp(self) -> None:
         self.res = self.req.get(
             str(self.target),
             timeout=self.config.timeout,
@@ -69,7 +78,9 @@ class HttpFingerprint:
             cookies=self.cookies,
         )
 
-    def _get_csrf_token(self, res, cred):
+    def _get_csrf_token(
+        self, res: requests.Response, cred: Dict[str, Any]
+    ) -> Optional[str]:
         name = cred["auth"].get("csrf", False)
         if name:
             tree = html.fromstring(res.content)
@@ -84,7 +95,9 @@ class HttpFingerprint:
 
         return csrf
 
-    def _get_session_id(self, res, cred):
+    def _get_session_id(
+        self, res: requests.Response, cred: Dict[str, Any]
+    ) -> Optional[Dict[str, str]]:
         cookie = cred["auth"].get("sessionid", False)
 
         if cookie:
@@ -99,7 +112,7 @@ class HttpFingerprint:
             self.logger.debug("No cookie")
             return False
 
-    def ismatch(self, cred, response):
+    def ismatch(self, cred: Dict[str, Any], response: requests.Response) -> bool:
         match = False
         if cred["protocol"] == "http":
             fp = cred["fingerprint"]
@@ -125,7 +138,7 @@ class HttpFingerprint:
 
         return match
 
-    def get_scanners(self, creds):
+    def get_scanners(self, creds: List[Dict[str, Any]]) -> List[Any]:
         scanners = list()
         for cred in creds:
             if self.ismatch(cred, self.res):
@@ -190,7 +203,9 @@ class HttpFingerprint:
         return scanners
 
     @staticmethod
-    def build_fingerprints(targets, creds, config):
+    def build_fingerprints(
+        targets: Any, creds: List[Dict[str, Any]], config: Any
+    ) -> List["HttpFingerprint"]:
         fingerprints = list()
         logger = logging.getLogger("changeme")
         # Build a set of unique fingerprints

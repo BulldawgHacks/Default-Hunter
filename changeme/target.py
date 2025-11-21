@@ -6,35 +6,44 @@ import re
 from os.path import isfile
 import shodan
 import socket
+from typing import Optional, Set, Any
 
 
 class Target(object):
-    def __init__(self, host=None, port=None, protocol=None, url=None):
-        self.host = host
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        port: Optional[int | str] = None,
+        protocol: Optional[str] = None,
+        url: Optional[str] = None,
+    ) -> None:
+        self.host: Optional[str] = host
         if port:
             port = re.sub(r"\D", "", str(port))
             if 0 < int(port) < 65535:
-                self.port = int(port)
+                self.port: Optional[int] = int(port)
             else:
                 # just disregard the port for now.
                 self.port = None
         else:
             self.port = None
-        self.protocol = protocol
-        self.url = url
-        self.ip = None
+        self.protocol: Optional[str] = protocol
+        self.url: Optional[str] = url
+        self.ip: Optional[str] = None
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Target):
+            return False
         return self.__dict__ == other.__dict__
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return id(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.__str__()
 
-    def __str__(self):
-        target = self
+    def __str__(self) -> str:
+        target: str | Target = self
 
         if self.host:
             target = self.host
@@ -50,7 +59,7 @@ class Target(object):
 
         return str(target)
 
-    def get_ip(self):
+    def get_ip(self) -> str:
         if self.ip is None:
             regex = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
             result = regex.match(self.host)
@@ -62,9 +71,9 @@ class Target(object):
         return self.ip
 
     @staticmethod
-    def parse_target(target):
+    def parse_target(target: str) -> Set["Target"]:
         logger = logging.getLogger("changeme")
-        targets = set()
+        targets: Set[Target] = set()
         if isfile(target):
             try:
                 # parse nmap
@@ -86,11 +95,11 @@ class Target(object):
         return targets
 
     @staticmethod
-    def _parse_target_string(target):
+    def _parse_target_string(target: str) -> Set["Target"]:
         logger = logging.getLogger("changeme")
         logger.debug("Parsing target %s" % target)
         target = target.strip().rstrip("/")
-        targets = set()
+        targets: Set[Target] = set()
         try:
             for ip in IPNetwork(target).iter_hosts():  # (covers IP or cidr) #3,4
                 targets.add(Target(host=str(ip)))
@@ -117,9 +126,9 @@ class Target(object):
         return targets
 
     @staticmethod
-    def get_shodan_targets(config):
+    def get_shodan_targets(config: Any) -> Set["Target"]:
         logger = logging.getLogger("changeme")
-        targets = set()
+        targets: Set[Target] = set()
         api = shodan.Shodan(config.shodan_key)
         results = api.search(config.shodan_query)
         logger.debug("shodan results: %s" % results)

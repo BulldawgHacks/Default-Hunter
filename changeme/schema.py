@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import changeme.core
+import logging
 import os
+from typing import Dict, Any, Callable
 
 try:
     # Python 3
@@ -11,7 +13,7 @@ except ImportError:
     from urllib import unquote_plus
 import yaml
 
-cli_prompt = input
+cli_prompt: Callable[[str], str] = input
 try:
     cli_prompt = raw_input
 except NameError:
@@ -123,7 +125,7 @@ http_schema = {
 }
 
 
-def mkcred():
+def mkcred() -> None:
     """
     TODO:
         - move credentials under auth
@@ -133,10 +135,12 @@ def mkcred():
         - move type under auth
     """
 
-    parameters = dict()
+    parameters: Dict[str, Any] = dict()
     auth_types = ["post", "basic_auth", "get", "raw_post"]
 
-    def get_data(field, prompt, boolean=False, integer=False):
+    def get_data(
+        field: str, prompt: str, boolean: bool = False, integer: bool = False
+    ) -> None:
         result = cli_prompt(prompt).strip()
         if boolean and result.lower() == "y":
             result = True

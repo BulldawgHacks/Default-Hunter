@@ -5,22 +5,23 @@ import pickle
 from .scanners.http_fingerprint import HttpFingerprint
 from .target import Target
 import time
+from typing import List, Dict, Any, Set
 
 
 class ScanEngine(object):
-    def __init__(self, creds, config):
-        self.creds = creds
-        self.config = config
-        self.logger = logging.getLogger("changeme")
-        self._manager = mp.Manager()
-        self.scanners = self._get_queue("scanners")
-        self.total_scanners = 0
-        self.targets = set()
-        self.fingerprints = self._get_queue("fingerprints")
-        self.total_fps = 0
-        self.found_q = self._get_queue("found_q")
+    def __init__(self, creds: List[Dict[str, Any]], config: Any) -> None:
+        self.creds: List[Dict[str, Any]] = creds
+        self.config: Any = config
+        self.logger: logging.Logger = logging.getLogger("changeme")
+        self._manager: mp.Manager = mp.Manager()
+        self.scanners: RedisQueue = self._get_queue("scanners")
+        self.total_scanners: int = 0
+        self.targets: Set[Target] = set()
+        self.fingerprints: RedisQueue = self._get_queue("fingerprints")
+        self.total_fps: int = 0
+        self.found_q: RedisQueue = self._get_queue("found_q")
 
-    def scan(self):
+    def scan(self) -> None:
         # Phase I - Fingerprint
         ######################################################################
         if not self.config.resume:
@@ -81,12 +82,12 @@ class ScanEngine(object):
             # Hack to address a broken pipe IOError per https://stackoverflow.com/questions/36359528/broken-pipe-error-with-multiprocessing-queue
             time.sleep(0.1)
 
-    def _add_terminators(self, q):
+    def _add_terminators(self, q: RedisQueue) -> None:
         # Add poison pills
         for i in range(self.config.threads):
             q.put(None)
 
-    def _scan(self, scanq, foundq):
+    def _scan(self, scanq: RedisQueue, foundq: RedisQueue) -> None:
         while True:
             remaining = self.scanners.qsize()
             self.logger.debug("%i scanners remaining" % remaining)
@@ -103,7 +104,7 @@ class ScanEngine(object):
             if result:
                 foundq.put(result)
 
-    def fingerprint_targets(self):
+    def fingerprint_targets(self) -> None:
         while True:
             remaining = self.fingerprints.qsize()
             self.logger.debug("%i fingerprints remaining" % remaining)
@@ -132,7 +133,7 @@ class ScanEngine(object):
 
         self.logger.debug("scanners: %i, %s" % (self.scanners.qsize(), id(self.scanners)))
 
-    def _build_targets(self):
+    def _build_targets(self) -> None:
         self.logger.debug("Building targets")
 
         if self.config.target:
@@ -193,14 +194,14 @@ class ScanEngine(object):
         self.total_fps = self.fingerprints.qsize()
         self.logger.debug("%i fingerprints" % self.fingerprints.qsize())
 
-    def dry_run(self):
+    def dry_run(self) -> None:
         self.logger.info("Dry run targets:")
         while self.fingerprints.qsize() > 0:
             fp = self.fingerprints.get()
             self.logger.info(fp.target)
         quit()
 
-    def _get_queue(self, name):
+    def _get_queue(self, name: str) -> RedisQueue:
         self.logger.debug("Using multiprocessing queue for %s" % name)
         q = self._manager.Queue()
         return RedisQueue(name, manager_queue=q)

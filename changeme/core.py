@@ -13,11 +13,12 @@ from . import schema
 import sys
 from . import version
 import yaml
+from typing import Optional, Dict, List, Any
 
 PERSISTENT_QUEUE = "data.db"  # Instantiated in the scan_engine class
 
 
-def main():
+def main() -> Optional[ScanEngine]:
     args = parse_args()
     init_logging(args["args"].verbose, args["args"].debug, args["args"].log)
     config = Config(args["args"], args["parser"])
@@ -65,7 +66,9 @@ def main():
     return s
 
 
-def init_logging(verbose=False, debug=False, logfile=None):
+def init_logging(
+    verbose: bool = False, debug: bool = False, logfile: Optional[str] = None
+) -> logging.Logger:
     """
     Logging levels:
         - Critical: Default credential found
@@ -130,7 +133,7 @@ def init_logging(verbose=False, debug=False, logfile=None):
 
 
 class Config(object):
-    def __init__(self, args, arg_parser):
+    def __init__(self, args: argparse.Namespace, arg_parser: argparse.ArgumentParser) -> None:
         # Convert argparse Namespace to a dict and make the keys + values member variables of the config class
         args = vars(args)
         self.target = None
@@ -139,7 +142,7 @@ class Config(object):
 
         self._validate_args(arg_parser)
 
-    def _validate_args(self, ap):
+    def _validate_args(self, ap: argparse.ArgumentParser) -> None:
         logger = logging.getLogger("changeme")
         if (
             not self.validate
@@ -189,13 +192,13 @@ class Config(object):
         if self.output and which("phantomjs") is None:
             logger.warning("phantomjs is not in your path, screenshots will not work")
 
-    def _file_exists(self, f):
+    def _file_exists(self, f: str) -> None:
         if not os.path.isfile(f):
             self.logger.error("File %s not found" % f)
             sys.exit()
 
 
-def parse_args():
+def parse_args() -> Dict[str, Any]:
     ap = argparse.ArgumentParser(description="Default credential scanner v%s" % version.__version__)
     ap.add_argument("--all", "-a", action="store_true", help="Scan for all protocols", default=False)
     ap.add_argument("--category", "-c", type=str, help="Category of default creds to scan for", default=None)
@@ -285,7 +288,7 @@ def parse_args():
     return {"args": args, "parser": ap}
 
 
-def get_protocol(filename):
+def get_protocol(filename: str) -> str:
     parts = filename.split(os.path.sep)
     cred_index = 0
     for p in parts:
@@ -296,7 +299,7 @@ def get_protocol(filename):
     return parts[cred_index + 1]
 
 
-def load_creds(config):
+def load_creds(config: Config) -> List[Dict[str, Any]]:
     # protocol is based off of the directory and category is a field in the cred file. That way you can
     # have default creds across protocols for a single device like a printer
     logger = logging.getLogger("changeme")
@@ -330,7 +333,7 @@ def load_creds(config):
     return creds
 
 
-def validate_cred(cred, f, protocol):
+def validate_cred(cred: Dict[str, Any], f: str, protocol: str) -> bool:
     valid = True
     if protocol == "http":
         v = Validator()
@@ -342,7 +345,7 @@ def validate_cred(cred, f, protocol):
     return valid
 
 
-def parse_yaml(f):
+def parse_yaml(f: str) -> Optional[Dict[str, Any]]:
     logger = logging.getLogger("changeme")
     with open(f, "r") as fin:
         raw = fin.read()
@@ -355,7 +358,7 @@ def parse_yaml(f):
     return parsed
 
 
-def is_yaml(f):
+def is_yaml(f: str) -> bool:
     isyaml = False
     try:
         isyaml = os.path.basename(f).split(".")[1] == "yml"
@@ -364,7 +367,12 @@ def is_yaml(f):
     return isyaml
 
 
-def in_scope(name, category, cred, protocols):
+def in_scope(
+    name: Optional[str],
+    category: Optional[str],
+    cred: Dict[str, Any],
+    protocols: List[str],
+) -> bool:
     add = True
 
     if name:
@@ -385,7 +393,7 @@ def in_scope(name, category, cred, protocols):
     return add
 
 
-def print_contributors(creds):
+def print_contributors(creds: List[Dict[str, Any]]) -> None:
     contributors = set()
     for cred in creds:
         cred_contributors = cred["contributor"].split(", ")
@@ -401,14 +409,14 @@ def print_contributors(creds):
     print()
 
 
-def print_creds(creds):
+def print_creds(creds: List[Dict[str, Any]]) -> None:
     for cred in creds:
         print("\n%s (%s)" % (cred["name"], cred["category"]))
         for i in cred["auth"]["credentials"]:
             print("  - %s:%s" % (i["username"], i["password"]))
 
 
-def check_for_interrupted_scan(config):
+def check_for_interrupted_scan(config: Config) -> None:
     logger = logging.getLogger("changeme")
     if config.fresh:
         logger.debug("Forcing a fresh scan")
@@ -422,7 +430,7 @@ def check_for_interrupted_scan(config):
             remove_queues()
 
 
-def prompt_for_resume(config):
+def prompt_for_resume(config: Config) -> bool:
     logger = logging.getLogger("changeme")
     logger.error("A previous scan was interrupted. Type R to resume or F to start a fresh scan")
     answer = ""
@@ -443,7 +451,7 @@ def prompt_for_resume(config):
     return config.resume
 
 
-def remove_queues():
+def remove_queues() -> None:
     logger = logging.getLogger("changeme")
     try:
         os.remove(PERSISTENT_QUEUE)
@@ -453,7 +461,7 @@ def remove_queues():
         pass
 
 
-def check_version():
+def check_version() -> None:
     logger = logging.getLogger("changeme")
 
     try:
@@ -471,7 +479,7 @@ def check_version():
 
 
 # copied from https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-def which(program):
+def which(program: str) -> Optional[str]:
     import os
 
     def is_exe(fpath):

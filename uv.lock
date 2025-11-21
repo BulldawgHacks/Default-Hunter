@@ -216,15 +216,13 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "nose" },
-]
 redis-scanning = [
     { name = "redis" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "nose" },
     { name = "pyright" },
 ]
 
@@ -235,7 +233,6 @@ requires-dist = [
     { name = "logutils" },
     { name = "lxml" },
     { name = "netaddr" },
-    { name = "nose", marker = "extra == 'dev'" },
     { name = "paramiko" },
     { name = "psycopg2-binary" },
     { name = "pymongo" },
@@ -251,10 +248,13 @@ requires-dist = [
     { name = "sqlalchemy" },
     { name = "tabulate" },
 ]
-provides-extras = ["dev", "redis-scanning"]
+provides-extras = ["redis-scanning"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pyright", specifier = ">=1.1.407" }]
+dev = [
+    { name = "nose" },
+    { name = "pyright", specifier = ">=1.1.407" },
+]
 
 [[package]]
 name = "charset-normalizer"
