@@ -1,12 +1,13 @@
 import logging
 import multiprocessing as mp
-from changeme.redis_queue import RedisQueue
-import pickle
+import queue
+import time
+from typing import List, Dict, Any, Set, Type, TYPE_CHECKING
+
+from .redis_queue import RedisQueue
 from .scanners.http_fingerprint import HttpFingerprint
 from . import scanners
 from .target import Target
-import time
-from typing import List, Dict, Any, Set, Type, TYPE_CHECKING
 from .scanners.scanner import Scanner
 
 if TYPE_CHECKING:
@@ -56,6 +57,7 @@ class ScanEngine(object):
         self.fingerprints: RedisQueue = self._get_queue("fingerprints")
         self.total_fps: int = 0
         self.found_q: RedisQueue = self._get_queue("found_q")
+        self.scanned_targets = set()
 
     def scan(self) -> None:
         # Phase I - Fingerprint
@@ -72,9 +74,7 @@ class ScanEngine(object):
 
         self.logger.debug(f"Number of threads: {num_procs}")
         self.total_fps = self.fingerprints.qsize()
-        procs = [mp.Process(target=self.fingerprint_targets) for i in range(num_procs)]
-
-        self._add_terminators(self.fingerprints)
+        procs = [mp.Process(target=self.fingerprint_targets) for _ in range(num_procs)]
 
         for proc in procs:
             proc.start()
@@ -83,31 +83,19 @@ class ScanEngine(object):
             proc.join()
 
         self.logger.info("Fingerprinting completed")
+        self.logger.debug(f"scanners: {self.scanners.qsize()}, {id(self.scanners)}")
 
         # Phase II - Scan
         ######################################################################
-        # Unique the queue
-        scanners = list()
-        while self.scanners.qsize() > 0:
-            s = self.scanners.get()
-
-            if s not in scanners:
-                scanners.append(s)
-
-        for s in scanners:
-            self.scanners.put(s)
-
         if not self.config.fingerprint:
             num_procs = self.config.threads if self.scanners.qsize() > self.config.threads else self.scanners.qsize()
             self.total_scanners = self.scanners.qsize()
 
-            self.logger.debug(f"Starting {num_procs} scanner procs")
+            self.logger.debug(f"Starting {num_procs} scanner threads")
             procs = [mp.Process(target=self._scan, args=(self.scanners, self.found_q)) for i in range(num_procs)]
 
-            self._add_terminators(self.scanners)
-
             for proc in procs:
-                self.logger.debug("Starting scanner proc")
+                self.logger.debug("Starting scanner thread")
                 proc.start()
 
             for proc in procs:
@@ -118,42 +106,39 @@ class ScanEngine(object):
             # Hack to address a broken pipe IOError per https://stackoverflow.com/questions/36359528/broken-pipe-error-with-multiprocessing-queue
             time.sleep(0.1)
 
-    def _add_terminators(self, q: RedisQueue) -> None:
-        # Add poison pills
-        for i in range(self.config.threads):
-            q.put(None)
-
     def _scan(self, scanq: RedisQueue, foundq: RedisQueue) -> None:
         while True:
             remaining = self.scanners.qsize()
+            if not remaining:
+                return
             self.logger.debug(f"{remaining} scanners remaining")
 
             try:
-                scanner = scanq.get(block=True)
-                if scanner is None:
-                    return
+                scanner = scanq.get()
+                if scanner.scan_id in self.scanned_targets:
+                    continue
+            except queue.Empty:
+                return
             except Exception as e:
-                self.logger.debug(f"Caught exception: {type(e).__name__}")
+                self.logger.debug(f"Caught exception: {type(e).__name__}", exc_info=True)
                 continue
 
             result = scanner.scan()
             if result:
                 foundq.put(result)
+            self.scanned_targets.add(scanner.scan_id)
 
     def fingerprint_targets(self) -> None:
         while True:
             remaining = self.fingerprints.qsize()
+            if not remaining:
+                return
             self.logger.debug(f"{remaining} fingerprints remaining")
 
             try:
                 fp = self.fingerprints.get()
-                if type(fp) is bytes:
-                    fp = pickle.loads(fp)
-
-                # Exit process
-                if fp is None:
-                    return
-
+            except queue.Empty:
+                return
             except Exception as e:
                 self.logger.debug(f"Caught exception: {type(e).__name__}")
                 exception_str = e.__str__().replace("\n", "|")
@@ -167,8 +152,6 @@ class ScanEngine(object):
                         self.scanners.put(result)
             else:
                 self.logger.debug("failed fingerprint")
-
-        self.logger.debug(f"scanners: {self.scanners.qsize()}, {id(self.scanners)}")
 
     def _build_targets(self) -> None:
         self.logger.debug("Building targets")

@@ -1,8 +1,4 @@
-
-try:
-    from queue import Queue, Empty
-except ImportError:
-    from Queue import Empty
+from queue import Empty
 
 
 class RedisQueue(object):

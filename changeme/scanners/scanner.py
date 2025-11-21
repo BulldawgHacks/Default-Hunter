@@ -88,8 +88,6 @@ class Scanner(object):
         self.__dict__ = d
         self.logger = logging.getLogger("changeme")
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Scanner):
-            return False
-        return self.__dict__ == other.__dict__
-        # return (str(self.target) + self.username + self.password) == (other.target + other.username + other.password)
+    @property
+    def scan_id(self) -> tuple[str, str, str]:
+        return (str(self.target), self.username, self.password)
