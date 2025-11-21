@@ -127,6 +127,10 @@ def init_logging(verbose: bool = False, debug: bool = False, logfile: Optional[s
     # Adjust the loggers for requests and urllib3
     logging.getLogger("requests").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
+
+    # Disable paramiko logging completely
+    logging.getLogger("paramiko").setLevel(logging.CRITICAL + 1)
+
     try:
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)  # type: ignore
     except AttributeError:
