@@ -6,11 +6,6 @@ from .scanners.http_fingerprint import HttpFingerprint
 from .target import Target
 import time
 
-try:
-    pass
-except:
-    pass
-
 
 class ScanEngine(object):
     def __init__(self, creds, config):

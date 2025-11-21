@@ -350,7 +350,7 @@ def is_yaml(f):
     isyaml = False
     try:
         isyaml = os.path.basename(f).split(".")[1] == "yml"
-    except:
+    except Exception:
         pass
     return isyaml
 
