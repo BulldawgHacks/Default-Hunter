@@ -197,7 +197,7 @@ def mkcred():
             auth["type"] = t
             break
         else:
-            print("Invalid auth type")
+            logging.getLogger("changeme").warning("Invalid auth type")
 
     if auth["type"] == "post" or auth["type"] == "get":
         form = dict()
@@ -229,7 +229,7 @@ def mkcred():
                 header = {h[0]: h[1]}
                 headers.append(header)
             else:
-                print('Invalid header.  Headers must be in the format "Header_name: header_value"\n')
+                logging.getLogger("changeme").warning('Invalid header.  Headers must be in the format "Header_name: header_value"\n')
         else:
             break
     csrf = cli_prompt("Name of csrf field: ")
@@ -263,9 +263,8 @@ def mkcred():
     auth["success"] = success
     parameters["auth"] = auth
 
-    print()
     fname = parameters["name"].lower().replace(" ", "_").replace("/", "_") + ".yml"
-    print("Writing config to %s" % fname)
+    logging.getLogger("changeme").info("Writing config to %s" % fname)
 
     cdir = os.path.join("creds", parameters["protocol"], parameters["category"])
     if not os.path.isdir(cdir):
@@ -274,6 +273,6 @@ def mkcred():
     with open(os.path.join(cdir, fname), "w") as fout:
         fout.write(yaml.dump(parameters, default_flow_style=False))
 
-    print(yaml.dump(parameters, default_flow_style=False))
+    logging.getLogger("changeme").info("\n" + yaml.dump(parameters, default_flow_style=False))
 
     changeme.core.validate_cred(parameters, fname, parameters["category"])

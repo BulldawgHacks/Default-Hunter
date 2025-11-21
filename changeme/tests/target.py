@@ -19,7 +19,7 @@ def test_nmap():
     assert len(targets) == 1
     t = targets.pop()
     path = os.path.dirname(os.path.abspath(__file__))
-    print("target: %s" % t)
+    # Test output - target should be 127.0.0.1:8080
     assert t == Target(host="127.0.0.1", port="8080")
 
 

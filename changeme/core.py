@@ -88,6 +88,7 @@ def init_logging(verbose=False, debug=False, logfile=None):
         # Create file handler which logs even debug messages
         #######################################################################
         fh = logging.FileHandler(logfile)
+        fh.setLevel(logging.DEBUG)  # File handler always logs all levels
 
         # create formatter and add it to the handler
         formatter = logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s")
@@ -98,6 +99,14 @@ def init_logging(verbose=False, debug=False, logfile=None):
     ###########################################################################
     # create console handler with a higher log level
     ch = colorize.ColorizingStreamHandler(sys.stdout)
+
+    # Set the handler level to match the logger level
+    if debug:
+        ch.setLevel(logging.DEBUG)
+    elif verbose:
+        ch.setLevel(logging.INFO)
+    else:
+        ch.setLevel(logging.WARNING)
 
     # set custom colorings:
     ch.level_map[logging.DEBUG] = [None, 2, False]
@@ -314,8 +323,8 @@ def load_creds(config):
                             cred_names.append(parsed["name"])
                             logger.debug("Loaded %s" % parsed["name"])
 
-    print("Loaded %i default credential profiles" % len(creds))
-    print("Loaded %i default credentials\n" % total_creds)
+    logger.info("Loaded %i default credential profiles" % len(creds))
+    logger.info("Loaded %i default credentials\n" % total_creds)
 
     creds
     return creds

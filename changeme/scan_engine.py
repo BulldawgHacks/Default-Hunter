@@ -197,7 +197,7 @@ class ScanEngine(object):
         self.logger.info("Dry run targets:")
         while self.fingerprints.qsize() > 0:
             fp = self.fingerprints.get()
-            print(fp.target)
+            self.logger.info(fp.target)
         quit()
 
     def _get_queue(self, name):
