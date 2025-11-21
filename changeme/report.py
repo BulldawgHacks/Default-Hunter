@@ -8,12 +8,14 @@ import os
 import re
 import sys
 from tabulate import tabulate
-from typing import Optional, List, Dict, Any
-from multiprocessing import Queue
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from changeme.redis_queue import RedisQueue
 
 
 class Report:
-    def __init__(self, queue: Queue, output: Optional[str]) -> None:
+    def __init__(self, queue: "RedisQueue", output: Optional[str]) -> None:
         self.results: List[Dict[str, Any]] = self._convert_q2list(queue)
         self.output: Optional[str] = output
         self.logger: logging.Logger = logging.getLogger("changeme")
@@ -21,7 +23,7 @@ class Report:
     def render_csv(
         self,
     ) -> None:
-        fname = self.output
+        fname = self.output if self.output else "results.csv"
         if not re.match(r".*\.csv$", fname):
             fname += ".csv"
 
@@ -43,7 +45,7 @@ class Report:
         results = dict()
         results["results"] = res
         j = json.dumps(results)
-        fname = self.output
+        fname = self.output if self.output else "results.json"
         if not re.match(r".*\.json$", fname):
             fname += ".json"
 
@@ -88,7 +90,7 @@ class Report:
         timestamp = datetime.now()
         report = report_template.render({"found": self.results, "cli": cli, "timestamp": timestamp})
 
-        fname = self.output
+        fname = self.output if self.output else "report.html"
         if not re.match(r".*\.html$", fname):
             fname += ".html"
 
@@ -103,7 +105,7 @@ class Report:
         template_path = os.path.join(PATH, "templates")
         return template_path
 
-    def _convert_q2list(self, q: Queue) -> List[Dict[str, Any]]:
+    def _convert_q2list(self, q: "RedisQueue") -> List[Dict[str, Any]]:
         items = list()
         while not q.qsize() == 0:
             i = q.get()

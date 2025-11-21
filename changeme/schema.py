@@ -10,12 +10,12 @@ try:
     from urllib.parse import unquote_plus
 except ImportError:
     # Python 2
-    from urllib import unquote_plus
+    from urllib import unquote_plus  # type: ignore
 import yaml
 
 cli_prompt: Callable[[str], str] = input
 try:
-    cli_prompt = raw_input
+    cli_prompt = raw_input  # type: ignore
 except NameError:
     pass
 

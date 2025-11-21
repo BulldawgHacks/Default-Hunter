@@ -7,7 +7,10 @@ import re
 from .report import Report
 import requests
 from requests import ConnectionError
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
+try:
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
+except ImportError:
+    from urllib3.exceptions import InsecureRequestWarning  # type: ignore
 from .scan_engine import ScanEngine
 from . import schema
 import sys
@@ -127,18 +130,55 @@ def init_logging(
     # Adjust the loggers for requests and urllib3
     logging.getLogger("requests").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    try:
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)  # type: ignore
+    except AttributeError:
+        import urllib3
+        urllib3.disable_warnings(InsecureRequestWarning)  # type: ignore
 
     return logger
 
 
 class Config(object):
+    # Define expected attributes with types
+    target: Optional[str]
+    verbose: bool
+    debug: bool
+    log: Optional[str]
+    noversion: bool
+    mkcred: bool
+    contributors: bool
+    dump: bool
+    validate: bool
+    resume: bool
+    shodan_query: Optional[str]
+    output: Optional[str]
+    oa: bool
+    fingerprint: bool
+    delay: int
+    all: bool
+    protocols: Any  # Can be string or list
+    fresh: bool
+    name: Optional[str]
+    category: Optional[str]
+    useragent: Dict[str, str]
+    proxy: Optional[Dict[str, str]]
+    threads: int
+    timeout: int
+    ssl: bool
+    portoverride: bool
+    shodan_key: Optional[str]
+    dryrun: bool
+    nmap: Optional[str]
+    logger: Optional[logging.Logger]
+
     def __init__(self, args: argparse.Namespace, arg_parser: argparse.ArgumentParser) -> None:
         # Convert argparse Namespace to a dict and make the keys + values member variables of the config class
-        args = vars(args)
+        args_dict = vars(args)
         self.target = None
-        for key in args:
-            setattr(self, key, args[key])
+        self.logger = None
+        for key in args_dict:
+            setattr(self, key, args_dict[key])
 
         self._validate_args(arg_parser)
 
@@ -155,10 +195,10 @@ class Config(object):
             ap.print_help()
             quit()
 
-        if self.proxy and re.match(r"^https?://[0-9\.]+:[0-9]{1,5}$", self.proxy):
+        if self.proxy and isinstance(self.proxy, str) and re.match(r"^https?://[0-9\.]+:[0-9]{1,5}$", self.proxy):
             self.proxy = {"http": self.proxy, "https": self.proxy}
             logger.info("Setting proxy to %s" % self.proxy)
-        elif self.proxy:
+        elif self.proxy and isinstance(self.proxy, str):
             logger.error("Invalid proxy, must be http(s)://x.x.x.x:8080")
             sys.exit()
 
@@ -179,9 +219,9 @@ class Config(object):
         if self.debug or self.validate:
             logger.setLevel(logging.DEBUG)
 
-        self.useragent = {"User-Agent": self.useragent} if self.useragent else {}
+        self.useragent = {"User-Agent": str(self.useragent)} if self.useragent else {}
 
-        if "," in self.protocols:
+        if isinstance(self.protocols, str) and "," in self.protocols:
             self.protocols = self.protocols.split(",")
 
         if self.all:
@@ -194,7 +234,8 @@ class Config(object):
 
     def _file_exists(self, f: str) -> None:
         if not os.path.isfile(f):
-            self.logger.error("File %s not found" % f)
+            logger = logging.getLogger("changeme")
+            logger.error("File %s not found" % f)
             sys.exit()
 
 
@@ -329,7 +370,6 @@ def load_creds(config: Config) -> List[Dict[str, Any]]:
     logger.info("Loaded %i default credential profiles" % len(creds))
     logger.info("Loaded %i default credentials\n" % total_creds)
 
-    creds
     return creds
 
 
@@ -337,9 +377,9 @@ def validate_cred(cred: Dict[str, Any], f: str, protocol: str) -> bool:
     valid = True
     if protocol == "http":
         v = Validator()
-        valid = v.validate(cred, schema.http_schema)
-        for e in v.errors:
-            logging.getLogger("changeme").error("[validate_cred] Validation Error: %s, %s - %s" % (f, e, v.errors[e]))
+        valid = v.validate(cred, schema.http_schema)  # type: ignore
+        for e in v.errors:  # type: ignore
+            logging.getLogger("changeme").error("[validate_cred] Validation Error: %s, %s - %s" % (f, e, v.errors[e]))  # type: ignore
     # TODO: implement schema validators for other protocols
 
     return valid
@@ -438,7 +478,7 @@ def prompt_for_resume(config: Config) -> bool:
         prompt = "(R/F)> "
         answer = ""
         try:
-            answer = raw_input(prompt)
+            answer = raw_input(prompt)  # type: ignore
         except NameError:
             answer = input(prompt)
 

@@ -13,7 +13,7 @@ class ScanEngine(object):
         self.creds: List[Dict[str, Any]] = creds
         self.config: Any = config
         self.logger: logging.Logger = logging.getLogger("changeme")
-        self._manager: mp.Manager = mp.Manager()
+        self._manager: Any = mp.Manager()
         self.scanners: RedisQueue = self._get_queue("scanners")
         self.total_scanners: int = 0
         self.targets: Set[Target] = set()
@@ -198,7 +198,8 @@ class ScanEngine(object):
         self.logger.info("Dry run targets:")
         while self.fingerprints.qsize() > 0:
             fp = self.fingerprints.get()
-            self.logger.info(fp.target)
+            if fp is not None:
+                self.logger.info(fp.target)
         quit()
 
     def _get_queue(self, name: str) -> RedisQueue:

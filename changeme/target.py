@@ -43,7 +43,7 @@ class Target(object):
         return self.__str__()
 
     def __str__(self) -> str:
-        target: str | Target = self
+        target: str = ""
 
         if self.host:
             target = self.host
@@ -57,10 +57,10 @@ class Target(object):
         if self.url:
             target += self.url
 
-        return str(target)
+        return target
 
-    def get_ip(self) -> str:
-        if self.ip is None:
+    def get_ip(self) -> Optional[str]:
+        if self.ip is None and self.host:
             regex = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
             result = regex.match(self.host)
             if not result:
@@ -77,11 +77,11 @@ class Target(object):
         if isfile(target):
             try:
                 # parse nmap
-                report = np.parse_fromfile(target)
-                logger.info("Loaded %i hosts from %s" % (len(report.hosts), target))
-                for h in report.hosts:
-                    for s in h.services:
-                        targets.add(Target(host=h.address, port=s.port))
+                report = np.parse_fromfile(target)  # type: ignore
+                logger.info("Loaded %i hosts from %s" % (len(report.hosts), target))  # type: ignore
+                for h in report.hosts:  # type: ignore
+                    for s in h.services:  # type: ignore
+                        targets.add(Target(host=h.address, port=s.port))  # type: ignore
             except:
                 # parse text file
                 with open(target, "r") as fin:
