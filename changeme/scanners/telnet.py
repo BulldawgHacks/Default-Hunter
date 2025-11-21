@@ -1,5 +1,5 @@
 from .scanner import Scanner
-import telnetlib
+import telnetlib3.telnetlib as telnetlib
 import time
 
 

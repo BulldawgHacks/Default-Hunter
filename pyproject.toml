@@ -31,6 +31,7 @@ dependencies = [
     "shodan",
     "sqlalchemy",
     "tabulate",
+    "telnetlib3>=2.0.8",
 ]
 
 [project.optional-dependencies]
