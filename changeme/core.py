@@ -294,7 +294,7 @@ def load_creds(config):
     creds = list()
     total_creds = 0
     cred_names = list()
-    cred_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "creds")
+    cred_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "creds")
     logger.debug("cred_path: %s" % cred_path)
     protocols = [proto for proto in os.walk(cred_path)][0][1]
     for root, dirs, files in os.walk(cred_path):
