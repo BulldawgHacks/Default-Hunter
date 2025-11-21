@@ -1,18 +1,23 @@
-import redis
 import pickle
+try:
+    from queue import Queue, Empty
+except ImportError:
+    from Queue import Queue, Empty
 
 
-# based on http://peter-hoffmann.com/2012/python-simple-queue-redis-queue.html
 class RedisQueue(object):
-    """Simple Queue with Redis Backend"""
-    def __init__(self, name, namespace='queue', **redis_kwargs):
-        """The default connection parameters are: host='localhost', port=6379, db=0"""
-        self.__db= redis.Redis(**redis_kwargs)
-        self.key = '%s:%s' %(namespace, name)
+    """Simple Queue with multiprocessing.Manager().Queue Backend"""
+    def __init__(self, name, namespace='queue', manager_queue=None, **kwargs):
+        """Queue wrapper that maintains API compatibility"""
+        self.name = name
+        self.namespace = namespace
+        self._queue = manager_queue
 
     def qsize(self):
         """Return the approximate size of the queue."""
-        return self.__db.llen(self.key)
+        if self._queue is None:
+            return 0
+        return self._queue.qsize()
 
     def empty(self):
         """Return True if the queue is empty, False otherwise."""
@@ -20,29 +25,34 @@ class RedisQueue(object):
 
     def put(self, item):
         """Put item into the queue."""
-        self.__db.rpush(self.key, pickle.dumps(item))
+        if self._queue is not None:
+            self._queue.put(item)
 
     def get(self, block=True, timeout=None):
         """Remove and return an item from the queue.
 
         If optional args block is true and timeout is None (the default), block
         if necessary until an item is available."""
-        if block:
-            item = self.__db.blpop(self.key, timeout=timeout)
-        else:
-            item = self.__db.lpop(self.key)
-
-        if item:
-            item = item[1]
-        return pickle.loads(item)
+        if self._queue is None:
+            return None
+        try:
+            return self._queue.get(block=block, timeout=timeout)
+        except Empty:
+            return None
 
     def get_nowait(self):
         """Equivalent to get(False)."""
         return self.get(False)
 
     def ping(self):
-        self.__db.ping()
+        """No-op for compatibility"""
+        pass
 
     def delete(self):
-        self.__db.delete(self.key)
-        self.__db.flushdb()
+        """Clear the queue"""
+        if self._queue is not None:
+            while not self._queue.empty():
+                try:
+                    self._queue.get_nowait()
+                except Empty:
+                    break

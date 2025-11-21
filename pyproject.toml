@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "changeme"
+version = "1.2.3"
+description = "A default credential scanner"
+readme = "README.md"
+authors = [
+    {name = "ztgrace"}
+]
+requires-python = ">=3.10"
+license = {text = "GPL3"}
+dependencies = [
+    "cerberus",
+    "jinja2",
+    "logutils",
+    "lxml",
+    "netaddr",
+    "paramiko",
+    "psycopg2-binary",
+    "pymongo",
+    "pyodbc",
+    "pysnmp",
+    "python-libnmap",
+    "python-memcached",
+    "pyyaml",
+    "requests",
+    "selenium",
+    "shodan",
+    "sqlalchemy",
+    "tabulate",
+]
+
+[project.optional-dependencies]
+dev = [
+    "nose",
+]
+redis-scanning = [
+    "redis",
+]
+
+[project.scripts]
+changeme = "changeme.core:main"
+
+[tool.setuptools.packages.find]
+include = ["changeme*"]

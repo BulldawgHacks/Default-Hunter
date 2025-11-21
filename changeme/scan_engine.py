@@ -1,6 +1,5 @@
 import logging
 import multiprocessing as mp
-import redis
 from changeme.redis_queue import RedisQueue
 import pickle
 from .scanners.ftp import FTP
@@ -19,10 +18,8 @@ from .scanners.http_fingerprint import HttpFingerprint
 from .target import Target
 import time
 try:
-    # Python 2
     from Queue import Queue
 except:
-    # Python 3
     from queue import Queue
 
 
@@ -31,6 +28,7 @@ class ScanEngine(object):
         self.creds = creds
         self.config = config
         self.logger = logging.getLogger('changeme')
+        self._manager = mp.Manager()
         self.scanners = self._get_queue('scanners')
         self.total_scanners = 0
         self.targets = set()
@@ -220,16 +218,6 @@ class ScanEngine(object):
         quit()
 
     def _get_queue(self, name):
-        try:
-            # Try for redis
-            r = RedisQueue(name)
-            r.ping()
-            self.logger.debug('Using RedisQueue for %s' % name)
-            return r
-
-        except redis.ConnectionError:
-            # Fall back to sqlite persistent queue
-            self.logger.debug('Using in-memory queue for %s' % name)
-            m = mp.Manager()
-            q = m.Queue()
-            return q
+        self.logger.debug('Using multiprocessing queue for %s' % name)
+        q = self._manager.Queue()
+        return RedisQueue(name, manager_queue=q)

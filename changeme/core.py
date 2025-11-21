@@ -1,11 +1,9 @@
 import argparse
 from cerberus import Validator
-from changeme.redis_queue import RedisQueue
 import logging
 from logutils import colorize
 import os
 import re
-import redis
 from .report import Report
 import requests
 from requests import ConnectionError
@@ -221,8 +219,6 @@ def parse_args():
     ap.add_argument('--oa', action='store_true', help='Output results files in csv, html and json formats', default=False)
     ap.add_argument('--protocols', type=str, help="Comma separated list of protocols to test: http,ssh,ssh_key. Defaults to http.", default='http')
     ap.add_argument('--portoverride', action='store_true', help='Scan all protocols on all specified ports', default=False)
-    ap.add_argument('--redishost', type=str, help='Redis server', default='localhost')
-    ap.add_argument('--redisport', type=str, help='Redis server', default='6379')
     ap.add_argument('--resume', '-r', action='store_true', help='Resume previous scan', default=False)
     ap.add_argument('--shodan_query', '-q', type=str, help='Shodan query', default=None)
     ap.add_argument('--shodan_key', '-k', type=str, help='Shodan API key', default=None)
@@ -382,33 +378,9 @@ def check_for_interrupted_scan(config):
         logger.debug("Resuming previous scan")
         return
 
-    fp = RedisQueue('fingerprint')
-    scanners = RedisQueue('scanners')
-    fp_qsize = 0
-    scanners_qsize = 0
-    logger.debug('scanners: %s, fp: %s' % (scanners_qsize, fp_qsize))
-    try:
-        fp_qsize = fp.qsize()
-    except redis.exceptions.ConnectionError:
-        pass
-    try:
-        scanners_qsize = scanners.qsize()
-    except redis.exceptions.ConnectionError:
-        pass
-
-    if fp_qsize > 0 or scanners_qsize > 0:
+    if os.path.exists(PERSISTENT_QUEUE):
         if not prompt_for_resume(config):
             remove_queues()
-
-    if fp_qsize == 0 and scanners_qsize == 0:
-        # Clear the found queue if there's no fingerprints or scanners in the queues
-        try:
-            logger.debug('Clearing found_q')
-            found_q = RedisQueue('found_q')
-            found_q.delete()
-        except Exception as e:
-            logger.debug('Exception: %s: %s' % (type(e).__name__, e.__str__().replace('\n', '|')))
-            pass
 
 
 
@@ -441,18 +413,6 @@ def remove_queues():
     except OSError:
         logger.debug("%s didn't exist" % PERSISTENT_QUEUE)
         pass
-
-    # Clear Redis
-    queues = ['fingerprint', 'scanners', 'found_q']
-    for q in queues:
-        logger.debug('Removing %s RedisQueue' % q)
-        r = RedisQueue(q)
-        try:
-            r.delete()
-            logger.debug("%s Redis queue removed" % q)
-        except:
-            logger.debug("%s Redis queue exception" % q)
-            pass
 
 
 def check_version():

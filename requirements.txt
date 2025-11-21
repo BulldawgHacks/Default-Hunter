@@ -12,7 +12,6 @@ pysnmp
 python-libnmap
 python-memcached
 pyyaml
-redis
 requests
 selenium
 shodan
