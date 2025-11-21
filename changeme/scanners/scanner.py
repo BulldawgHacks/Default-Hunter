@@ -89,5 +89,5 @@ class Scanner(object):
         self.logger = logging.getLogger("changeme")
 
     @property
-    def scan_id(self) -> tuple[str, str, str]:
-        return (str(self.target), self.username, self.password)
+    def scan_id(self) -> str:
+        return str(self.target)

@@ -58,6 +58,7 @@ class ScanEngine(object):
         self.total_fps: int = 0
         self.found_q: RedisQueue = self._get_queue("found_q")
         self.scanned_targets = set()
+        self.lock = mp.Lock()
 
     def scan(self) -> None:
         # Phase I - Fingerprint
@@ -108,43 +109,49 @@ class ScanEngine(object):
 
     def _scan(self, scanq: RedisQueue, foundq: RedisQueue) -> None:
         while True:
-            remaining = self.scanners.qsize()
-            if not remaining:
-                return
-            self.logger.debug(f"{remaining} scanners remaining")
+            with self.lock:
+                try:
+                    scanner = scanq.get(block=False)
+                except queue.Empty:
+                    return
+                except Exception as e:
+                    self.logger.debug(f"Caught exception: {type(e).__name__}", exc_info=True)
+                    continue
 
-            try:
-                scanner = scanq.get()
+                if not scanner:
+                    return
+
                 if scanner.scan_id in self.scanned_targets:
                     continue
-            except queue.Empty:
-                return
-            except Exception as e:
-                self.logger.debug(f"Caught exception: {type(e).__name__}", exc_info=True)
-                continue
+
+                self.scanned_targets.add(scanner.scan_id)
+                remaining = self.scanners.qsize()
+
+            self.logger.debug(f"{remaining} scanners remaining")
 
             result = scanner.scan()
             if result:
                 foundq.put(result)
-            self.scanned_targets.add(scanner.scan_id)
 
     def fingerprint_targets(self) -> None:
         while True:
-            remaining = self.fingerprints.qsize()
-            if not remaining:
+            with self.lock:
+                remaining = self.fingerprints.qsize()
+
+                try:
+                    fp = self.fingerprints.get(block=False)
+                except queue.Empty:
+                    return
+                except Exception as e:
+                    self.logger.debug(f"Caught exception: {type(e).__name__}")
+                    exception_str = e.__str__().replace("\n", "|")
+                    self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
+                    return
+
+            if not fp:
                 return
+
             self.logger.debug(f"{remaining} fingerprints remaining")
-
-            try:
-                fp = self.fingerprints.get()
-            except queue.Empty:
-                return
-            except Exception as e:
-                self.logger.debug(f"Caught exception: {type(e).__name__}")
-                exception_str = e.__str__().replace("\n", "|")
-                self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
-                return
-
             if fp.fingerprint():
                 results = fp.get_scanners(self.creds)
                 if results:
