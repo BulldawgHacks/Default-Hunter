@@ -5,6 +5,9 @@
 auth:
   get:
     auth: 'YWRtaW46MTEK'
+    password: ''
+    username: ''
+  credentials: []
   headers: []
   success:
     status: 200

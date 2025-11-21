@@ -18,7 +18,8 @@ category: camera
 contributor: 't.me/ju_oj'
 default_port: 80
 fingerprint:
-  title: 'Netwave IP Camera'
+  body:
+    - 'Netwave IP Camera'
   status: 200
   url:
   - ''
