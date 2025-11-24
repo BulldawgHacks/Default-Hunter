@@ -2,14 +2,14 @@ import argparse
 from changeme.scan_engine import ScanEngine
 from changeme.target import Target
 from changeme import core
-from .core import cli_args
+from .test_core import cli_args
 from copy import deepcopy
 import csv
 import json
 import logging
-import mock
+from unittest import mock
 from .mock_responses import MockResponses
-from nose.tools import *
+import pytest
 import os
 import responses
 
@@ -25,7 +25,6 @@ TODO:
 def reset_handlers():
     logger = logging.getLogger("changeme")
     logger.handlers = []
-    core.remove_queues()
 
 
 fp_args = deepcopy(cli_args)
@@ -84,7 +83,7 @@ def test_tomcat_match_nmap(mock_args):
 
     responses.reset()
     responses.add(**MockResponses.tomcat_auth)
-    s._scan(s.scanners, s.found_q)
+    s._scan(s.scanners, s.found_q, s.compromised_targets)
     assert s.found_q.qsize() == 17
 
 
@@ -148,7 +147,7 @@ def test_jboss_scan_fail(mock_args):
         se.scanners.put(s)
 
     se._add_terminators(se.scanners)
-    se._scan(se.scanners, se.found_q)
+    se._scan(se.scanners, se.found_q, se.compromised_targets)
     assert se.found_q.qsize() == 0
 
 
@@ -283,12 +282,12 @@ dr_args = deepcopy(cli_args)
 dr_args["dryrun"] = True
 
 
-@raises(SystemExit)
 @mock.patch("argparse.ArgumentParser.parse_args", return_value=argparse.Namespace(**dr_args))
 def test_dryrun(mock_args):
     reset_handlers()
-    se = core.main()
-    assert se.found_q.qsize() == 0
+    with pytest.raises(SystemExit):
+        se = core.main()
+        assert se.found_q.qsize() == 0
 
 
 es_args = deepcopy(cli_args)

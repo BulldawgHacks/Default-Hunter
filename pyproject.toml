@@ -51,7 +51,16 @@ line-length = 120
 [dependency-groups]
 dev = [
     "pyright>=1.1.407",
-    "nose",
+    "pytest>=9.0.1",
+    "responses>=0.25.0",
 ]
 
-# [tool.ruff.lint.per-file-ignores]
+[tool.pytest.ini_options]
+norecursedirs = "tests/shares"
+filterwarnings = "ignore::DeprecationWarning"
+minversion = "8.0"
+addopts = "-ra -q"
+pythonpath = "src tests"
+testpaths = [
+    "tests",
+]

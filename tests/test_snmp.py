@@ -1,15 +1,14 @@
 import argparse
 from changeme import core
-from .core import cli_args
+from .test_core import cli_args
 from copy import deepcopy
 import logging
-import mock
+from unittest import mock
 
 
 def reset_handlers():
     logger = logging.getLogger("changeme")
     logger.handlers = []
-    core.remove_queues()
 
 
 snmp_args = deepcopy(cli_args)
