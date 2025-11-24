@@ -59,7 +59,6 @@ class ScanEngine(object):
         self.fingerprints: RedisQueue = self._get_queue("fingerprints")
         self.total_fps: int = 0
         self.found_q: RedisQueue = self._get_queue("found_q")
-        self.lock = mp.Lock()
         # Shared dict to track targets that have been successfully compromised
         # Using dict as a set since Manager doesn't provide a set type
         self.compromised_targets: Any = self._manager.dict()
@@ -158,16 +157,15 @@ class ScanEngine(object):
 
     def fingerprint_targets(self) -> None:
         while True:
-            with self.lock:
-                try:
-                    fp = self.fingerprints.get(block=False)
-                except queue.Empty:
-                    return
-                except Exception as e:
-                    self.logger.debug(f"Caught exception: {type(e).__name__}")
-                    exception_str = e.__str__().replace("\n", "|")
-                    self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
-                    return
+            try:
+                fp = self.fingerprints.get(block=False)
+            except queue.Empty:
+                return
+            except Exception as e:
+                self.logger.debug(f"Caught exception: {type(e).__name__}")
+                exception_str = e.__str__().replace("\n", "|")
+                self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
+                return
 
             if not fp:
                 return
