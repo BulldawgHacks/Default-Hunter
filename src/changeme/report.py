@@ -13,6 +13,7 @@ from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from changeme.redis_queue import OurQueue
+    from changeme.scanners.scanner import ScanSuccess
 
 
 class DataclassJSONEncoder(json.JSONEncoder):
@@ -24,7 +25,7 @@ class DataclassJSONEncoder(json.JSONEncoder):
 
 class Report:
     def __init__(self, queue: "OurQueue", output: Optional[str]) -> None:
-        self.results: List[Dict[str, Any]] = self._convert_q2list(queue)
+        self.results: List["ScanSuccess"] = self._convert_q2list(queue)
         self.output: Optional[str] = output
         self.logger: logging.Logger = logging.getLogger("changeme")
 
@@ -45,14 +46,15 @@ class Report:
 
     def render_json(self) -> None:
         # convert the Target classes to a string so it can be json'd
-        res = deepcopy(self.results)
-        for r in res:
-            t = r.target
-            r.target = str(t)
+        res = []
+        for r in self.results:
+            r_dict = r.as_dict()
+            r_dict["target"] = str(r.target)
+            res.append(r_dict)
 
         results = dict()
         results["results"] = res
-        j = json.dumps(results, cls=DataclassJSONEncoder)
+        j = json.dumps(results)
         fname = self.output if self.output else "results.json"
         if not re.match(r".*\.json$", fname):
             fname += ".json"
@@ -64,10 +66,13 @@ class Report:
 
     def print_results(self) -> None:
         if len(self.results) > 0:
-            results = deepcopy(self.results)
-            for r in results:
+            # Convert to dicts for display, hiding evidence for http results
+            results_dicts = []
+            for r in self.results:
+                r_dict = r.as_dict()
                 if "http" in r.target.protocol:
-                    r.evidence = ""
+                    r_dict["evidence"] = ""
+                results_dicts.append(r_dict)
 
             print("")
             print("")
@@ -75,7 +80,7 @@ class Report:
             print("")
             print(
                 tabulate(
-                    results,
+                    results_dicts,
                     headers={
                         "name": "Name",
                         "username": "Username",
@@ -113,7 +118,7 @@ class Report:
         template_path = os.path.join(PATH, "templates")
         return template_path
 
-    def _convert_q2list(self, q: "OurQueue") -> List[Dict[str, Any]]:
+    def _convert_q2list(self, q: "OurQueue") -> List["ScanSuccess"]:
         items = list()
         while not q.qsize() == 0:
             i = q.get()

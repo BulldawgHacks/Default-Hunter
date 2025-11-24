@@ -136,13 +136,15 @@ class HTTPGetScanner(Scanner):
                     exception_str = e.__str__().replace('\n', '|')
                     self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
 
-            return {
-                "name": self.cred["name"],
-                "username": self.username,
-                "password": self.password,
-                "target": self.target,
-                "evidence": evidence,
-            }
+            from .scanner import ScanSuccess
+
+            return ScanSuccess(
+                name=self.cred["name"],
+                username=self.username,
+                password=self.password,
+                target=self.target,
+                evidence=evidence,
+            )
         else:
             self.logger.info(
                 f"Invalid {self.cred['name']} default cred {self.username}:{self.password} at {self.target}"

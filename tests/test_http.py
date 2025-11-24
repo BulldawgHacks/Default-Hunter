@@ -48,10 +48,6 @@ def test_tomcat_match_nmap(mock_args):
     )
 
     reset_handlers()
-    try:
-        os.remove(core.PERSISTENT_QUEUE)
-    except OSError:
-        pass
 
     args = core.parse_args()
     core.init_logging(args["args"].verbose, args["args"].debug, args["args"].log)
@@ -102,7 +98,6 @@ def test_tomcat_fingerprint(mock_args):
     se = core.main()
     logging.getLogger("changeme").debug("Scanners: %s" % se.scanners.qsize())
     assert se.scanners.qsize() == 34
-    core.remove_queues()
 
 
 @responses.activate
@@ -269,7 +264,6 @@ def test_json_output(mock_args):
     assert se.found_q.qsize() == 1
 
     assert os.path.isfile(json_args["output"])
-    i = 0
     with open(json_args["output"], "r") as json_file:
         j = json.loads(json_file.read())
         assert j["results"][0]["name"] == "JBoss AS 6 Alt"

@@ -18,9 +18,8 @@ def test_nmap():
     targets = Target.parse_target(nmap)
     assert len(targets) == 1
     t = targets.pop()
-    path = os.path.dirname(os.path.abspath(__file__))
     # Test output - target should be 127.0.0.1:8080
-    assert t == Target(host="127.0.0.1", port="8080")
+    assert t == Target(host="127.0.0.1", port="8080", protocol="http")
 
 
 def test_targets_file():
