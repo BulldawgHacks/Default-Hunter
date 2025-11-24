@@ -1,8 +1,8 @@
-from changeme.scanners.http_basic_auth import HTTPBasicAuthScanner
-from changeme.scanners.http_get import HTTPGetScanner
-from changeme.scanners.http_post import HTTPPostScanner
-from changeme.scanners.http_raw_post import HTTPRawPostScanner
-from changeme.target import Target
+from default_hunter.scanners.http_basic_auth import HTTPBasicAuthScanner
+from default_hunter.scanners.http_get import HTTPGetScanner
+from default_hunter.scanners.http_post import HTTPPostScanner
+from default_hunter.scanners.http_raw_post import HTTPRawPostScanner
+from default_hunter.target import Target
 from copy import deepcopy
 import logging
 from lxml import html
@@ -23,7 +23,7 @@ class HttpFingerprint:
         self.headers: Optional[Dict[str, str]] = headers
         self.cookies: Optional[Dict[str, str]] = cookies
         self.config: Any = config
-        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.logger: logging.Logger = logging.getLogger("default_hunter")
         self.res: Optional[requests.Response] = None
         self.req: requests.Session = requests.Session()
 
@@ -34,7 +34,7 @@ class HttpFingerprint:
 
     def __setstate__(self, d):
         self.__dict__ = d
-        self.logger = logging.getLogger("changeme")
+        self.logger = logging.getLogger("default_hunter")
 
     def __hash__(self) -> int:
         return hash(str(self.target) + str(self.headers) + str(self.cookies))
@@ -197,7 +197,7 @@ class HttpFingerprint:
     @staticmethod
     def build_fingerprints(targets: Any, creds: List[Dict[str, Any]], config: Any) -> List["HttpFingerprint"]:
         fingerprints = list()
-        logger = logging.getLogger("changeme")
+        logger = logging.getLogger("default_hunter")
         # Build a set of unique fingerprints
         for target in targets:
             for c in creds:

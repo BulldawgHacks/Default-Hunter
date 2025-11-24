@@ -52,7 +52,7 @@ class ScanEngine(object):
     def __init__(self, creds: List[Dict[str, Any]], config: "Config") -> None:
         self.creds: List[Dict[str, Any]] = creds
         self.config: "Config" = config
-        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.logger: logging.Logger = logging.getLogger("default_hunter")
         self._manager: Any = mp.Manager()
         self.scanners: OurQueue = self._get_queue("scanners")
         self.total_scanners: int = 0

@@ -7,7 +7,6 @@ import re
 import sys
 from .report import Report
 import requests
-from requests import ConnectionError
 from .keyboard_input import raw_terminal_mode
 
 try:
@@ -28,8 +27,6 @@ def main() -> Optional[ScanEngine]:
     args = parse_args()
     init_logging(args["args"].verbose, args["args"].debug, args["args"].log)
     config = Config(args["args"], args["parser"])
-    if not config.noversion:
-        check_version()
     creds = load_creds(config)
     s = None
 
@@ -45,7 +42,7 @@ def main() -> Optional[ScanEngine]:
         print_creds(creds)
         quit()
 
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
 
     if not config.validate:
         s = ScanEngine(creds, config)
@@ -88,7 +85,7 @@ def init_logging(verbose: bool = False, debug: bool = False, logfile: Optional[s
         - Debug: Extra info for debugging purposes
     """
     # Set up our logging object
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -194,7 +191,7 @@ class Config(object):
         self._validate_args(arg_parser)
 
     def _validate_args(self, ap: argparse.ArgumentParser) -> None:
-        logger = logging.getLogger("changeme")
+        logger = logging.getLogger("default_hunter")
         if (
             not self.validate
             and not self.contributors
@@ -242,7 +239,7 @@ class Config(object):
 
     def _file_exists(self, f: str) -> None:
         if not os.path.isfile(f):
-            logger = logging.getLogger("changeme")
+            logger = logging.getLogger("default_hunter")
             logger.error(f"File {f} not found")
             sys.exit()
 
@@ -350,7 +347,7 @@ def get_protocol(filename: str) -> str:
 def load_creds(config: Config) -> List[Dict[str, Any]]:
     # protocol is based off of the directory and category is a field in the cred file. That way you can
     # have default creds across protocols for a single device like a printer
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
     creds = list()
     total_creds = 0
     cred_names = list()
@@ -386,14 +383,14 @@ def validate_cred(cred: Dict[str, Any], f: str, protocol: str) -> bool:
         v = Validator()
         valid = v.validate(cred, schema.http_schema)  # type: ignore
         for e in v.errors:  # type: ignore
-            logging.getLogger("changeme").error(f"[validate_cred] Validation Error: {f}, {e} - {v.errors[e]}")  # type: ignore
+            logging.getLogger("default_hunter").error(f"[validate_cred] Validation Error: {f}, {e} - {v.errors[e]}")  # type: ignore
     # TODO: implement schema validators for other protocols
 
     return valid
 
 
 def parse_yaml(f: str) -> Optional[Dict[str, Any]]:
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
     with open(f, "r") as fin:
         raw = fin.read()
         try:
@@ -461,22 +458,6 @@ def print_creds(creds: List[Dict[str, Any]]) -> None:
         print(f"\n{cred['name']} ({cred['category']})")
         for i in cred["auth"]["credentials"]:
             print(f"  - {i['username']}:{i['password']}")
-
-
-def check_version() -> None:
-    logger = logging.getLogger("changeme")
-
-    try:
-        res = requests.get("https://raw.githubusercontent.com/ztgrace/changeme/master/changeme/version.py", timeout=2)
-    except ConnectionError:
-        logger.debug("Unable to retrieve latest changeme version.")
-        return
-
-    latest = res.text.split("\n")[0].split(" = ")[1].replace("'", "")
-    if not version.__version__ == latest:
-        logger.warning(
-            f"Your version of changeme is out of date. Local version: {version.__version__}, Latest: {latest}"
-        )
 
 
 # copied from https://stackoverflow.com/questions/377017/test-if-executable-exists-in-python

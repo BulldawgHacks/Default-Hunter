@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import changeme.core
+import default_hunter.core
 import logging
 import os
 from typing import Dict, Any, Callable
@@ -201,7 +201,7 @@ def mkcred() -> None:
             auth["type"] = t
             break
         else:
-            logging.getLogger("changeme").warning("Invalid auth type")
+            logging.getLogger("default_hunter").warning("Invalid auth type")
 
     if auth["type"] == "post" or auth["type"] == "get":
         form = dict()
@@ -233,7 +233,7 @@ def mkcred() -> None:
                 header = {h[0]: h[1]}
                 headers.append(header)
             else:
-                logging.getLogger("changeme").warning('Invalid header.  Headers must be in the format "Header_name: header_value"\n')
+                logging.getLogger("default_hunter").warning('Invalid header.  Headers must be in the format "Header_name: header_value"\n')
         else:
             break
     csrf = cli_prompt("Name of csrf field: ")
@@ -268,7 +268,7 @@ def mkcred() -> None:
     parameters["auth"] = auth
 
     fname = parameters["name"].lower().replace(" ", "_").replace("/", "_") + ".yml"
-    logging.getLogger("changeme").info(f"Writing config to {fname}")
+    logging.getLogger("default_hunter").info(f"Writing config to {fname}")
 
     cdir = os.path.join("creds", parameters["protocol"], parameters["category"])
     if not os.path.isdir(cdir):
@@ -277,6 +277,6 @@ def mkcred() -> None:
     with open(os.path.join(cdir, fname), "w") as fout:
         fout.write(yaml.dump(parameters, default_flow_style=False))
 
-    logging.getLogger("changeme").info("\n" + yaml.dump(parameters, default_flow_style=False))
+    logging.getLogger("default_hunter").info("\n" + yaml.dump(parameters, default_flow_style=False))
 
-    changeme.core.validate_cred(parameters, fname, parameters["category"])
+    default_hunter.core.validate_cred(parameters, fname, parameters["category"])

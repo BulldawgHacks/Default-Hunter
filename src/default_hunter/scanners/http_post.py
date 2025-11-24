@@ -1,4 +1,4 @@
-from changeme.scanners.http_get import HTTPGetScanner
+from default_hunter.scanners.http_get import HTTPGetScanner
 from typing import Dict, Any, Optional, Tuple, TYPE_CHECKING
 
 if TYPE_CHECKING:

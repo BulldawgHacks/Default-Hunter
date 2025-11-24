@@ -1,4 +1,4 @@
-from changeme.target import Target
+from default_hunter.target import Target
 import os
 
 """

@@ -75,7 +75,7 @@ class Target(object):
 
     @staticmethod
     def parse_target(target: str) -> Set["Target"]:
-        logger = logging.getLogger("changeme")
+        logger = logging.getLogger("default_hunter")
         targets: Set[Target] = set()
         if isfile(target):
             try:
@@ -101,7 +101,7 @@ class Target(object):
 
     @staticmethod
     def _parse_target_string(target: str) -> Set["Target"]:
-        logger = logging.getLogger("changeme")
+        logger = logging.getLogger("default_hunter")
         logger.debug(f"Parsing target {target}")
         target = target.strip().rstrip("/")
         targets: Set[Target] = set()
@@ -132,7 +132,7 @@ class Target(object):
 
     @staticmethod
     def get_shodan_targets(config: "Config") -> Set["Target"]:
-        logger = logging.getLogger("changeme")
+        logger = logging.getLogger("default_hunter")
         targets: Set[Target] = set()
         api = shodan.Shodan(config.shodan_key)
         results = api.search(config.shodan_query)

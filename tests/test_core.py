@@ -1,5 +1,5 @@
 import argparse
-from changeme import *
+from default_hunter import *
 from copy import deepcopy
 from unittest import mock
 import pytest

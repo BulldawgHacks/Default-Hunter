@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "changeme"
+name = "default-hunter"
 version = "1.2.3"
 description = "A default credential scanner"
 readme = "README.md"
@@ -40,10 +40,10 @@ redis-scanning = [
 ]
 
 [project.scripts]
-changeme = "changeme.core:main"
+default-hunter = "default_hunter.core:main"
 
 [tool.setuptools.packages.find]
-include = ["changeme*"]
+include = ["default_hunter*"]
 
 [tool.ruff]
 line-length = 120

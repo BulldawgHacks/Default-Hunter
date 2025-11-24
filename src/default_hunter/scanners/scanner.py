@@ -2,7 +2,7 @@ from dataclasses import dataclass, asdict
 import logging
 import socket
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
-from changeme.target import Target
+from default_hunter.target import Target
 
 if TYPE_CHECKING:
     from ..core import Config
@@ -29,7 +29,7 @@ class Scanner(object):
         username: str,
         password: str,
     ) -> None:
-        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.logger: logging.Logger = logging.getLogger("default_hunter")
         self.cred: Dict[str, Any] = cred
         self.target: Target = target
         if self.target.port is None:
@@ -99,7 +99,7 @@ class Scanner(object):
 
     def __setstate__(self, d: Dict[str, Any]) -> None:
         self.__dict__ = d
-        self.logger = logging.getLogger("changeme")
+        self.logger = logging.getLogger("default_hunter")
 
     @property
     def scan_id(self) -> str:

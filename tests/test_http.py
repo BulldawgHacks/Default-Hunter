@@ -1,7 +1,7 @@
 import argparse
-from changeme.scan_engine import ScanEngine
-from changeme.target import Target
-from changeme import core
+from default_hunter.scan_engine import ScanEngine
+from default_hunter.target import Target
+from default_hunter import core
 from .test_core import cli_args
 from copy import deepcopy
 import csv
@@ -23,7 +23,7 @@ TODO:
 
 
 def reset_handlers():
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
     logger.handlers = []
 
 
@@ -57,12 +57,12 @@ def test_tomcat_match_nmap(mock_args):
     s._build_targets()
     s._add_terminators(s.fingerprints)
 
-    logging.getLogger("changeme").debug("fp: %i" % s.fingerprints.qsize())
+    logging.getLogger("default_hunter").debug("fp: %i" % s.fingerprints.qsize())
     s.fingerprint_targets()
 
     # Queue is not serializeable so we can't copy it using deepcopy
     scanners = list()
-    logging.getLogger("changeme").debug("scanners: %s" % s.scanners.qsize())
+    logging.getLogger("default_hunter").debug("scanners: %s" % s.scanners.qsize())
 
     t1 = Target(host="127.0.0.1", port=8080, protocol="http", url="/manager/html")
     t2 = Target(host="127.0.0.1", port=8080, protocol="http", url="/tomcat/manager/html")
@@ -93,10 +93,10 @@ fp_args["noversion"] = False
 @mock.patch("argparse.ArgumentParser.parse_args", return_value=argparse.Namespace(**fp_args))
 def test_tomcat_fingerprint(mock_args):
     responses.add(**MockResponses.tomcat_fp)
-    logging.getLogger("changeme").debug(responses.__dict__)
+    logging.getLogger("default_hunter").debug(responses.__dict__)
     reset_handlers()
     se = core.main()
-    logging.getLogger("changeme").debug("Scanners: %s" % se.scanners.qsize())
+    logging.getLogger("default_hunter").debug("Scanners: %s" % se.scanners.qsize())
     assert se.scanners.qsize() == 34
 
 
@@ -124,17 +124,17 @@ def test_jboss_scan_fail(mock_args):
     se._build_targets()
     se._add_terminators(se.fingerprints)
     se.fingerprint_targets()
-    logging.getLogger("changeme").debug(se.scanners.qsize())
+    logging.getLogger("default_hunter").debug(se.scanners.qsize())
     scanners = list()
     while se.scanners.qsize() > 0:
         s = se.scanners.get()
-        logging.getLogger("changeme").debug(s.cred["name"])
-        logging.getLogger("changeme").debug(s.target)
-        logging.getLogger("changeme").debug(s.username)
-        logging.getLogger("changeme").debug(s.password)
+        logging.getLogger("default_hunter").debug(s.cred["name"])
+        logging.getLogger("default_hunter").debug(s.target)
+        logging.getLogger("default_hunter").debug(s.username)
+        logging.getLogger("default_hunter").debug(s.password)
         scanners.append(s)
 
-    logging.getLogger("changeme").debug("num scanners: %i" % len(scanners))
+    logging.getLogger("default_hunter").debug("num scanners: %i" % len(scanners))
     assert len(scanners) == 2
 
     # put scanners back in queue
@@ -231,7 +231,7 @@ def test_csv_output(mock_args):
     responses.add(**MockResponses.jboss_auth)
     reset_handlers()
     se = core.main()
-    logging.getLogger("changeme").debug(se.found_q.qsize())
+    logging.getLogger("default_hunter").debug(se.found_q.qsize())
     assert se.found_q.qsize() == 1
 
     assert os.path.isfile(csv_args["output"])

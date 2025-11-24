@@ -12,8 +12,8 @@ from tabulate import tabulate
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from changeme.redis_queue import OurQueue
-    from changeme.scanners.scanner import ScanSuccess
+    from default_hunter.redis_queue import OurQueue
+    from default_hunter.scanners.scanner import ScanSuccess
 
 
 class DataclassJSONEncoder(json.JSONEncoder):
@@ -27,7 +27,7 @@ class Report:
     def __init__(self, queue: "OurQueue", output: Optional[str]) -> None:
         self.results: List["ScanSuccess"] = self._convert_q2list(queue)
         self.output: Optional[str] = output
-        self.logger: logging.Logger = logging.getLogger("changeme")
+        self.logger: logging.Logger = logging.getLogger("default_hunter")
 
     def render_csv(
         self,

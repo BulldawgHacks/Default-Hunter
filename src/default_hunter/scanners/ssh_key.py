@@ -19,7 +19,7 @@ class SSHKey(SSH):
         config: "Config",
     ) -> None:
         super(SSHKey, self).__init__(cred, target, username, key, config)
-        self.logger = logging.getLogger("changeme")
+        self.logger = logging.getLogger("default_hunter")
 
     def _check(self) -> str:
         fake = StringIO(self.password)

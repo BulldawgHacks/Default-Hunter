@@ -1,16 +1,16 @@
 import argparse
-from changeme import core
+from default_hunter import core
 from .test_core import cli_args
 from copy import deepcopy
 import logging
 from unittest import mock
 import os
 
-logger = logging.getLogger("changeme")
+logger = logging.getLogger("default_hunter")
 
 
 def reset_handlers():
-    logger = logging.getLogger("changeme")
+    logger = logging.getLogger("default_hunter")
     logger.handlers = []
 
 
