@@ -1,4 +1,5 @@
 import argparse
+import argcomplete
 from cerberus import Validator
 import logging
 from logutils import colorize
@@ -301,16 +302,6 @@ def parse_args() -> Dict[str, Any]:
     ap.add_argument("--validate", action="store_true", help="Validate creds files", default=False)
     ap.add_argument("--verbose", "-v", action="store_true", help="Verbose output", default=False)
 
-    # Hack to get the help to show up right
-    cli = " ".join(sys.argv)
-    if "-h" in cli or "--help" in cli:
-        ap.add_argument(
-            "target",
-            type=str,
-            help="Target to scan. Can be IP, subnet, hostname, nmap xml file, text file or proto://host:port",
-            default=None,
-        )
-
     # initial parse to see if an option not requiring a target was used
     args, unknown = ap.parse_known_args()
     if (
@@ -327,6 +318,9 @@ def parse_args() -> Dict[str, Any]:
             help="Target to scan. Can be IP, subnet, hostname, nmap xml file, text file or proto://host:port",
             default=None,
         )
+
+    # Enable shell completion
+    argcomplete.autocomplete(ap)
 
     args = ap.parse_args()
 
