@@ -19,6 +19,9 @@ class SSH(Scanner):
         super(SSH, self).__init__(cred, target, config, username, password)
 
     def _check(self) -> str:
+        if not self.target.host or not self.target.port:
+            raise ValueError("Target host and port must be set")
+
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())  # ignore unknown hosts
         c.connect(hostname=self.target.host, port=self.target.port, username=self.username, password=self.password)

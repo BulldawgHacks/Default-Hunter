@@ -1,5 +1,5 @@
 try:
-    import redis
+    import redis  # type: ignore[import-not-found]
 
     HAS_REDIS = True
 except ImportError:
@@ -28,7 +28,10 @@ class RedisScanner(Scanner):
         if not HAS_REDIS:
             return "redis module not installed - install with: pip install redis"
 
-        r = redis.StrictRedis(host=self.target.host, port=self.target.port)
+        if not self.target.host or not self.target.port:
+            raise ValueError("Target host and port must be set")
+
+        r = redis.StrictRedis(host=self.target.host, port=self.target.port)  # type: ignore[possibly-unbound]
         info = r.info()
         evidence = f"redis_version: {info['redis_version']}, os: {info['os']}"
 

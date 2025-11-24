@@ -32,12 +32,13 @@ class HTTPPostScanner(HTTPGetScanner):
 
         if self.cred.get("form_data"):
             form_data = {}
-            for k in data:
-                form_data[k] = (None, data[k])
+            if data:
+                for k in data:
+                    form_data[k] = (None, data[k])
 
             self.response = self.request.post(
-                self.target,
-                file=form_data,
+                str(self.target),
+                files=form_data,  # type: ignore[call-arg]
                 verify=False,
                 proxies=self.config.proxy,
                 timeout=self.config.timeout,
@@ -46,7 +47,7 @@ class HTTPPostScanner(HTTPGetScanner):
             )
         else:
             self.response = self.request.post(
-                self.target,
+                str(self.target),
                 data,
                 verify=False,
                 proxies=self.config.proxy,

@@ -19,6 +19,11 @@ class FTP(Scanner):
         super(FTP, self).__init__(cred, target, config, username, password)
 
     def _check(self) -> str:
+        if not self.target.host:
+            raise ValueError("Target host must be set")
+        if not self.target.port:
+            raise ValueError("Target port must be set")
+
         ftp = ftplib.FTP()
         ftp.connect(self.target.host, self.target.port, timeout=30)
 

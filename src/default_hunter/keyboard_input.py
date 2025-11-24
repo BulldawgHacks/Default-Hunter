@@ -29,8 +29,8 @@ def _check_spacebar_windows() -> bool:
     try:
         import msvcrt
 
-        if msvcrt.kbhit():
-            key = msvcrt.getch()
+        if msvcrt.kbhit():  # type: ignore[attr-defined]
+            key = msvcrt.getch()  # type: ignore[attr-defined]
             # Check for space (0x20) or 's' key
             return key in (b" ", b"s", b"S")
         return False
@@ -93,6 +93,6 @@ def raw_terminal_mode():
             # Always restore original settings
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
 
-    except (ImportError, OSError, termios.error):
+    except (ImportError, OSError, termios.error):  # type: ignore[possibly-unbound]
         # termios not available or not a TTY, just yield without changes
         yield

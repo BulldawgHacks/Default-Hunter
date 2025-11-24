@@ -19,6 +19,9 @@ class Telnet(Scanner):
         super(Telnet, self).__init__(cred, target, config, username, password)
 
     def _check(self) -> str:
+        if not self.target.host:
+            raise ValueError("Target host must be set")
+
         try:
             telnet = telnetlib.Telnet(str(self.target.host))
             timeout_allowed = int(self.cred["auth"]["blockingio_timeout"])
@@ -41,7 +44,7 @@ class Telnet(Scanner):
 
             telnet.write(b"ls\n")
 
-            evidence = telnet.read(1024, timeout=3)
+            evidence = telnet.read_very_eager()
             evidence_fp_check = Telnet._trim_string(evidence.decode(errors="ignore"))
 
             self.logger.debug(f"Evidence string returned (stripped): {evidence_fp_check}")

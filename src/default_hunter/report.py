@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 
 
 class DataclassJSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if dataclasses.is_dataclass(o):
+    def default(self, o: Any) -> Any:
+        if dataclasses.is_dataclass(o) and not isinstance(o, type):
             return dataclasses.asdict(o)
         return super().default(o)
 
@@ -70,7 +70,7 @@ class Report:
             results_dicts = []
             for r in self.results:
                 r_dict = r.as_dict()
-                if "http" in r.target.protocol:
+                if r.target.protocol and "http" in r.target.protocol:
                     r_dict["evidence"] = ""
                 results_dicts.append(r_dict)
 

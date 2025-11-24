@@ -24,7 +24,9 @@ class Database(Scanner):
         url = f"{self.target.protocol}://{self.username}:{self.password}@{self.target.host}:{self.target.port}/{self.database}"
         engine = sqlalchemy.create_engine(url, connect_args={"connect_timeout": self.config.timeout})
         c = engine.connect()
-        res = c.execute(self.query)
+        if self.query is None:
+            raise ValueError("Query must be set before checking")
+        res = c.execute(sqlalchemy.text(self.query))
 
         results = list()
         [results.append(i) for i in res.fetchall()]

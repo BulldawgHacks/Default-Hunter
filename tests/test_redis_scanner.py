@@ -20,4 +20,5 @@ redis_args["target"] = "127.0.0.1"
 def test_redis(mock_args):
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1

@@ -23,6 +23,7 @@ mongodb_args["target"] = "mongodb://127.0.0.1"
 def test_mongodb(mock_args):
     reset_handlers()
     se = core.main()
+    assert se is not None
 
     try:
         assert se.found_q.qsize() == 1

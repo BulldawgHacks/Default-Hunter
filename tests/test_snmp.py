@@ -21,6 +21,7 @@ snmp_args["target"] = "demo.snmplabs.com"
 def test_snmp(mock_args):
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 2
 
 
@@ -33,4 +34,5 @@ snmp_args["target"] = "snmp://demo.snmplabs.com"
 def test_snmp_proto(mock_args):
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 2

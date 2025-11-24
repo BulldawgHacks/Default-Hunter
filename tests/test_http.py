@@ -68,7 +68,7 @@ def test_tomcat_match_nmap(mock_args):
     t2 = Target(host="127.0.0.1", port=8080, protocol="http", url="/tomcat/manager/html")
     while s.scanners.qsize() > 0:
         scanner = s.scanners.get()
-        assert scanner.target == t1 or scanner.target == t2
+        assert scanner.target == t1 or scanner.target == t2  # type: ignore[attr-defined]
         scanners.append(scanner)
 
     # Load the scanners back into the queue
@@ -96,6 +96,7 @@ def test_tomcat_fingerprint(mock_args):
     logging.getLogger("default_hunter").debug(responses.__dict__)
     reset_handlers()
     se = core.main()
+    assert se is not None
     logging.getLogger("default_hunter").debug("Scanners: %s" % se.scanners.qsize())
     assert se.scanners.qsize() == 34
 
@@ -106,6 +107,7 @@ def test_tomcat_invalid_creds(mock_args):
     responses.add(**MockResponses.tomcat_fp)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 0
 
 
@@ -128,10 +130,10 @@ def test_jboss_scan_fail(mock_args):
     scanners = list()
     while se.scanners.qsize() > 0:
         s = se.scanners.get()
-        logging.getLogger("default_hunter").debug(s.cred["name"])
-        logging.getLogger("default_hunter").debug(s.target)
-        logging.getLogger("default_hunter").debug(s.username)
-        logging.getLogger("default_hunter").debug(s.password)
+        logging.getLogger("default_hunter").debug(s.cred["name"])  # type: ignore[attr-defined]
+        logging.getLogger("default_hunter").debug(s.target)  # type: ignore[attr-defined]
+        logging.getLogger("default_hunter").debug(s.username)  # type: ignore[attr-defined]
+        logging.getLogger("default_hunter").debug(s.password)  # type: ignore[attr-defined]
         scanners.append(s)
 
     logging.getLogger("default_hunter").debug("num scanners: %i" % len(scanners))
@@ -157,6 +159,7 @@ def test_jboss_scan_success(mock_args):
     responses.add(**MockResponses.jboss_auth)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1
 
 
@@ -173,6 +176,7 @@ def test_jboss_scan_success_subnet(mock_args):
     responses.add(**MockResponses.jboss_auth)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1
 
 
@@ -182,6 +186,7 @@ def test_jboss_csrf_fail(mock_args):
     responses.add(**MockResponses.jboss_fp_no_csrf)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 0
 
 
@@ -197,6 +202,7 @@ def test_idrac_scan_success(mock_args):
     responses.add(**MockResponses.idrac_auth)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1
 
 
@@ -215,6 +221,7 @@ def test_targets_scan_success(mock_args):
 
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1
 
 
@@ -231,6 +238,7 @@ def test_csv_output(mock_args):
     responses.add(**MockResponses.jboss_auth)
     reset_handlers()
     se = core.main()
+    assert se is not None
     logging.getLogger("default_hunter").debug(se.found_q.qsize())
     assert se.found_q.qsize() == 1
 
@@ -261,6 +269,7 @@ def test_json_output(mock_args):
     responses.add(**MockResponses.jboss_auth)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1
 
     assert os.path.isfile(json_args["output"])
@@ -281,6 +290,7 @@ def test_dryrun(mock_args):
     reset_handlers()
     with pytest.raises(SystemExit):
         se = core.main()
+        assert se is not None
         assert se.found_q.qsize() == 0
 
 
@@ -295,4 +305,5 @@ def test_es_scan_success(mock_args):
     responses.add(**MockResponses.elasticsearch)
     reset_handlers()
     se = core.main()
+    assert se is not None
     assert se.found_q.qsize() == 1

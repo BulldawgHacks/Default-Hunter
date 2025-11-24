@@ -22,11 +22,17 @@ class SSHKey(SSH):
         self.logger = logging.getLogger("default_hunter")
 
     def _check(self) -> str:
+        if not self.target.host or not self.target.port:
+            raise ValueError("Target host and port must be set")
+
         fake = StringIO(self.password)
+        key: paramiko.PKey
         if "RSA PRIVATE KEY" in self.password:
             key = paramiko.RSAKey.from_private_key(fake)
         elif "DSA PRIVATE KEY" in self.password:
-            key = paramiko.DSSKey.from_private_key(fake)
+            key = paramiko.DSSKey.from_private_key(fake)  # type: ignore[attr-defined]
+        else:
+            raise ValueError("Unknown key type")
 
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())  # ignore unknown hosts

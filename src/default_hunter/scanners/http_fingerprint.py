@@ -86,12 +86,11 @@ class HttpFingerprint:
                 csrf = str(tree.xpath(f'//input[@name="{name}"]/@value')[0])
             except Exception:
                 self.logger.error(f"Failed to get CSRF token {name} in {res.url}")
-                return False
+                return None
             self.logger.debug(f"Got CSRF token {name}: {csrf}")
+            return csrf
         else:
-            csrf = False
-
-        return csrf
+            return None
 
     def _get_session_id(self, res: requests.Response, cred: Dict[str, Any]) -> Optional[Dict[str, str]]:
         cookie = cred["auth"].get("sessionid", False)
@@ -102,11 +101,11 @@ class HttpFingerprint:
                 self.logger.debug(f"Got session cookie value: {value}")
             except Exception:
                 self.logger.error(f"Failed to get {cookie} cookie from {res.url}")
-                return False
+                return None
             return {cookie: value}
         else:
             self.logger.debug("No cookie")
-            return False
+            return None
 
     def ismatch(self, cred: Dict[str, Any], response: requests.Response) -> bool:
         match = False
@@ -136,17 +135,20 @@ class HttpFingerprint:
 
     def get_scanners(self, creds: List[Dict[str, Any]]) -> List[Any]:
         scanners = list()
+        if self.res is None:
+            return scanners
+
         for cred in creds:
             if self.ismatch(cred, self.res):
                 csrf = self._get_csrf_token(self.res, cred)
                 if cred["auth"].get("csrf", False) and not csrf:
                     self.logger.error("Missing required CSRF token")
-                    return
+                    return scanners
 
                 sessionid = self._get_session_id(self.res, cred)
                 if cred["auth"].get("sessionid") and not sessionid:
                     self.logger.error(f"Missing session cookie {cred['auth'].get('sessionid')} for {self.res.url}")
-                    return
+                    return scanners
 
                 for pair in cred["auth"]["credentials"]:
                     for u in cred["auth"]["url"]:  # pass in the auth url
@@ -157,7 +159,7 @@ class HttpFingerprint:
                         if cred["auth"]["type"] == "get":
                             scanners.append(
                                 HTTPGetScanner(
-                                    cred, target, pair["username"], pair["password"], self.config, self.req.cookies
+                                    cred, target, pair["username"], pair["password"], self.config, self.req.cookies  # type: ignore[arg-type]
                                 )
                             )
                         elif cred["auth"]["type"] == "post":
@@ -168,7 +170,7 @@ class HttpFingerprint:
                                     pair["username"],
                                     pair["password"],
                                     self.config,
-                                    self.req.cookies,
+                                    self.req.cookies,  # type: ignore[arg-type]
                                     csrf,
                                 )
                             )
@@ -180,7 +182,7 @@ class HttpFingerprint:
                                     pair["username"],
                                     pair["password"],
                                     self.config,
-                                    self.req.cookies,
+                                    self.req.cookies,  # type: ignore[arg-type]
                                     csrf,
                                     pair["raw"],
                                 )
@@ -188,7 +190,7 @@ class HttpFingerprint:
                         elif cred["auth"]["type"] == "basic_auth":
                             scanners.append(
                                 HTTPBasicAuthScanner(
-                                    cred, target, pair["username"], pair["password"], self.config, self.req.cookies
+                                    cred, target, pair["username"], pair["password"], self.config, self.req.cookies  # type: ignore[arg-type]
                                 )
                             )
 

@@ -19,6 +19,9 @@ class MemcachedScanner(Scanner):
         super(MemcachedScanner, self).__init__(cred, target, config, username, password)
 
     def _check(self) -> str:
+        if not self.target.host or not self.target.port:
+            raise ValueError("Target host and port must be set")
+
         mc = memcache.Client([f"{self.target.host}:{self.target.port}"], debug=0)
         stats = mc.get_stats()
         evidence = f"version: {stats[0][1]['version']}"

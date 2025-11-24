@@ -42,7 +42,7 @@ class Scanner(object):
         return id(self)
 
     def scan(self) -> Optional[Dict[str, Any]]:
-        return self.check_success()
+        return self.check_success()  # type: ignore[return-value]
 
     def fingerprint(self) -> bool:
         if self.target.port is None:
@@ -64,7 +64,7 @@ class Scanner(object):
     def get_scanners(self, creds: List[Dict[str, Any]]) -> List["Scanner"]:
         scanners = list()
         for pair in self.cred["auth"]["credentials"]:
-            scanners.append(self._mkscanner(self.cred, self.target, pair["username"], pair["password"], self.config))
+            scanners.append(self._mkscanner(self.cred, self.target, pair["username"], pair["password"], self.config))  # type: ignore[attr-defined]
         return scanners
 
     def check_success(self) -> Optional[ScanSuccess]:

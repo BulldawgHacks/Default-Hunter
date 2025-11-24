@@ -52,6 +52,9 @@ class SNMP(Scanner):
                 loop.close()
 
     async def _check_async(self) -> str:
+        if not self.target.host:
+            raise ValueError("Target host must be set")
+
         transport_target = await UdpTransportTarget.create((str(self.target.host), 161))
         errorIndication, errorStatus, errorIndex, varBinds = await get_cmd(
             SnmpEngine(),
@@ -66,7 +69,7 @@ class SNMP(Scanner):
             self.logger.debug(str(errorIndication))
             raise Exception(f"SNMP error: {errorIndication}")
         elif errorStatus:
-            error_msg = f"{errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}"
+            error_msg = f"{errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}"  # type: ignore[attr-defined]
             self.logger.debug(error_msg)
             raise Exception(error_msg)
         else:

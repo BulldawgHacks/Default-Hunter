@@ -8,7 +8,7 @@ class HTTPBasicAuthScanner(HTTPGetScanner):
     def _make_request(self) -> None:
         self.logger.debug(f"Requesting {self.target}")
         self.response = self.request.get(
-            self.target,
+            str(self.target),
             auth=HTTPBasicAuth(self.username, self.password),
             verify=False,
             proxies=self.config.proxy,

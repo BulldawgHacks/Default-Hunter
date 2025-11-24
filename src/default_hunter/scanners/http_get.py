@@ -86,8 +86,8 @@ class HTTPGetScanner(Scanner):
             self.logger.debug(f"Exception: {type(e).__name__}: {exception_str}")
             return None
 
-        if self.response.status_code == 429:
-            self.warn(f"Status 429 received. Sleeping for {self.config.delay} seconds and trying again")
+        if self.response and self.response.status_code == 429:
+            self.logger.warning(f"Status 429 received. Sleeping for {self.config.delay} seconds and trying again")
             sleep(self.config.delay)
             try:
                 self._make_request()
@@ -96,13 +96,16 @@ class HTTPGetScanner(Scanner):
 
         return self.check_success()
 
-    def check_success(self) -> Optional[Dict[str, Any]]:
+    def check_success(self) -> Optional[Dict[str, Any]]:  # type: ignore[override]
+        if self.response is None:
+            return None
+
         match = False
         success = self.cred["auth"]["success"]
 
         if self.cred["auth"].get("base64", None):
-            self.username = base64.b64decode(self.cred.username)
-            self.password = base64.b64decode(self.cred.password)
+            self.username = base64.b64decode(self.cred.get("username", "")).decode()  # type: ignore[assignment]
+            self.password = base64.b64decode(self.cred.get("password", "")).decode()  # type: ignore[assignment]
 
         if (
             success.get("status") == self.response.status_code
@@ -138,7 +141,7 @@ class HTTPGetScanner(Scanner):
 
             from .scanner import ScanSuccess
 
-            return ScanSuccess(
+            return ScanSuccess(  # type: ignore[return-value]
                 name=self.cred["name"],
                 username=self.username,
                 password=self.password,
@@ -149,30 +152,31 @@ class HTTPGetScanner(Scanner):
             self.logger.info(
                 f"Invalid {self.cred['name']} default cred {self.username}:{self.password} at {self.target}"
             )
-            return False
+            return None
 
     def _check_fingerprint(self) -> bool:
         self.logger.debug("_check_fingerprint")
         self.request = session()
         self.response = self.request.get(
-            self.target,
+            str(self.target),
             timeout=self.config.timeout,
             verify=False,
             proxies=self.config.proxy,
-            cookies=self.fingerprint.cookies,
-            headers=self.fingerprint.headers,
+            cookies=self.fingerprint.cookies,  # type: ignore[attr-defined]
+            headers=self.fingerprint.headers,  # type: ignore[attr-defined]
         )
         self.logger.debug("_check_fingerprint", f"{self.target} - {self.response.status_code}")
-        return self.fingerprint.match(self.response)
+        return self.fingerprint.match(self.response)  # type: ignore[attr-defined]
 
     def _make_request(self) -> None:
         self.logger.debug("_make_request")
         data = self.render_creds(self.cred)
-        qs = urlencode(data)
-        url = f"{self.target}?{qs}"
-        self.logger.debug(f"url: {url}")
+        if data:
+            qs = urlencode(data)
+            url = f"{self.target}?{qs}"
+            self.logger.debug(f"url: {url}")
         self.response = self.request.get(
-            self.target,
+            str(self.target),
             verify=False,
             proxies=self.config.proxy,
             timeout=self.config.timeout,
@@ -214,8 +218,9 @@ class HTTPGetScanner(Scanner):
                     username = cred["username"]
                     password = cred["password"]
 
-                cred_data[config["username"]] = username
-                cred_data[config["password"]] = password
+                if config:
+                    cred_data[config["username"]] = username
+                    cred_data[config["password"]] = password
 
                 data_to_send = dict(list(data.items()) + list(cred_data.items()))
                 return data_to_send
@@ -225,9 +230,10 @@ class HTTPGetScanner(Scanner):
     def _get_parameter_dict(self, auth: Dict[str, Any]) -> Dict[str, Any]:
         params = dict()
         data = auth.get("post", auth.get("get", None))
-        for k in list(data.keys()):
-            if k not in ("username", "password", "url"):
-                params[k] = data[k]
+        if data:
+            for k in list(data.keys()):
+                if k not in ("username", "password", "url"):
+                    params[k] = data[k]
 
         return params
 
@@ -241,12 +247,13 @@ class HTTPGetScanner(Scanner):
         self.logger.debug(f"Screenshotting {self.target}")
         # Set up the selenium webdriver
         # This feels like it will have threading issues
-        for key, value in self.response.request.headers.items():
-            capability_key = "phantomjs.page.customHeaders.{}".format(key)
-            webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
+        if self.response:
+            for key, value in self.response.request.headers.items():  # type: ignore[attr-defined]
+                capability_key = "phantomjs.page.customHeaders.{}".format(key)
+                webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value  # type: ignore[attr-defined]
 
         if self.config.proxy:
-            webdriver.DesiredCapabilities.PHANTOMJS["proxy"] = {
+            webdriver.DesiredCapabilities.PHANTOMJS["proxy"] = {  # type: ignore[attr-defined]
                 "httpProxy": self.config.proxy["http"].replace("http://", ""),
                 "ftpProxy": self.config.proxy["http"].replace("http://", ""),
                 "sslProxy": self.config.proxy["http"].replace("http://", ""),
@@ -254,13 +261,14 @@ class HTTPGetScanner(Scanner):
                 "proxyType": "MANUAL",
                 "autodetect": False,
             }
-        driver = webdriver.PhantomJS()
+        driver = webdriver.PhantomJS()  # type: ignore[attr-defined]
         driver.set_page_load_timeout(int(self.config.timeout) - 0.1)
         driver.set_window_position(0, 0)
         driver.set_window_size(850, 637.5)
-        for cookie in self.response.request._cookies.items():
-            self.logger.debug(f"Adding cookie: {cookie[0]}:{cookie[1]}")
-            driver.add_cookie({"name": cookie[0], "value": cookie[1], "path": "/", "domain": self.target.host})
+        if self.response:
+            for cookie in self.response.request._cookies.items():  # type: ignore[attr-defined]
+                self.logger.debug(f"Adding cookie: {cookie[0]}:{cookie[1]}")
+                driver.add_cookie({"name": cookie[0], "value": cookie[1], "path": "/", "domain": self.target.host})
 
         try:
             driver.get(str(self.target))
