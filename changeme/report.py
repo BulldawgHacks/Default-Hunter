@@ -1,5 +1,6 @@
 import csv
 from copy import deepcopy
+import dataclasses
 from datetime import datetime
 import jinja2
 import json
@@ -12,6 +13,13 @@ from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from changeme.redis_queue import RedisQueue
+
+
+class DataclassJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        return super().default(o)
 
 
 class Report:
@@ -31,7 +39,7 @@ class Report:
             fieldnames = ["name", "username", "password", "target"]
             writer = csv.DictWriter(fout, quoting=csv.QUOTE_ALL, fieldnames=fieldnames, extrasaction="ignore")
             writer.writeheader()
-            writer.writerows(self.results)
+            writer.writerows([r.as_dict() for r in self.results])
 
         self.logger.critical(f"{len(self.results)} credentials written to {fname}")
 
@@ -39,12 +47,12 @@ class Report:
         # convert the Target classes to a string so it can be json'd
         res = deepcopy(self.results)
         for r in res:
-            t = r["target"]
-            r["target"] = str(t)
+            t = r.target
+            r.target = str(t)
 
         results = dict()
         results["results"] = res
-        j = json.dumps(results)
+        j = json.dumps(results, cls=DataclassJSONEncoder)
         fname = self.output if self.output else "results.json"
         if not re.match(r".*\.json$", fname):
             fname += ".json"
@@ -58,8 +66,8 @@ class Report:
         if len(self.results) > 0:
             results = deepcopy(self.results)
             for r in results:
-                if "http" in r["target"].protocol:
-                    r["evidence"] = ""
+                if "http" in r.target.protocol:
+                    r.evidence = ""
 
             print("")
             print("")

@@ -1,3 +1,4 @@
+from dataclasses import dataclass, asdict
 import logging
 import socket
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
@@ -5,6 +6,18 @@ from changeme.target import Target
 
 if TYPE_CHECKING:
     from ..core import Config
+
+
+@dataclass
+class ScanSuccess:
+    name: str
+    username: str
+    password: str
+    target: Target
+    evidence: str
+
+    def as_dict(self) -> Dict[str, Any]:
+        return asdict(self)
 
 
 class Scanner(object):
@@ -54,27 +67,27 @@ class Scanner(object):
             scanners.append(self._mkscanner(self.cred, self.target, pair["username"], pair["password"], self.config))
         return scanners
 
-    def check_success(self) -> Optional[Dict[str, Any]]:
+    def check_success(self) -> Optional[ScanSuccess]:
         try:
             evidence = self._check()
             self.logger.critical(
                 f"[+] Found {self.cred['name']} default cred {self.username}:{self.password} at {self.target}"
             )
             self.logger.debug(f"{self.target} {self.username}:{self.password} evidence: {evidence}")
-            return {
-                "name": self.cred["name"],
-                "username": self.username,
-                "password": self.password,
-                "target": self.target,
-                "evidence": evidence,
-            }
+            return ScanSuccess(
+                name=self.cred["name"],
+                username=self.username,
+                password=self.password,
+                target=self.target,
+                evidence=evidence,
+            )
 
         except Exception as e:
             self.logger.info(
                 f"Invalid {self.cred['name']} default cred {self.username}:{self.password} at {self.target}"
             )
             self.logger.debug(f"{type(e).__name__} Exception: {str(e)}")
-            return False
+            return None
 
     def _check(self) -> Any:
         raise NotImplementedError("A Scanner class needs to implement a _check method.")
