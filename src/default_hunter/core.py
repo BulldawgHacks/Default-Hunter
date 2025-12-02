@@ -9,6 +9,7 @@ import sys
 from .report import Report
 import requests
 from .keyboard_input import raw_terminal_mode
+from .exceptions import DryRun
 
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning  # type: ignore
@@ -26,56 +27,61 @@ from typing import Optional, Dict, List, Any
 all_protocols = list(SCANNER_MAP.keys())
 
 
-def main() -> Optional[ScanEngine]:
-    args = parse_args()
-    init_logging(args["args"].verbose, args["args"].debug, args["args"].log)
-    config = Config(args["args"], args["parser"])
+def main() -> None:
+    args, parser = parse_args()
+    init_logging(args.verbose, args.debug, args.log)
+    config = Config(args, parser)
     creds = load_creds(config)
-    s = None
 
     if config.mkcred:
         schema.mkcred()
-        quit()
+        return
 
     if config.contributors:
         print_contributors(creds)
-        quit()
+        return
 
     if config.dump:
         print_creds(creds)
-        quit()
+        return
 
+    try:
+        run(config, creds)
+    except DryRun:
+        pass
+    except KeyboardInterrupt:
+        print("CTRL-C, caught, aborting...")
+        sys.exit(1)
+
+
+def run(config, creds) -> None:
     logger = logging.getLogger("default_hunter")
+    s = ScanEngine(creds, config)
 
-    if not config.validate:
-        s = ScanEngine(creds, config)
+    # Show startup message about status key if running interactively
+    if sys.stdin.isatty():
+        logger.info("Press SPACE to display scanning status")
 
-        # Show startup message about status key if running interactively
-        if sys.stdin.isatty():
-            logger.info("Press SPACE to display scanning status")
+    # Use raw terminal mode context manager for single-key capture
+    with raw_terminal_mode():
+        try:
+            s.scan()
+        except IOError:
+            logger.debug("Caught IOError exception")
 
-        # Use raw terminal mode context manager for single-key capture
-        with raw_terminal_mode():
-            try:
-                s.scan()
-            except IOError:
-                logger.debug("Caught IOError exception")
+    report = Report(s.found_q, config.output)
+    report.print_results()
 
-        report = Report(s.found_q, config.output)
-        report.print_results()
-
-        if config.output and ".json" in config.output or config.output and config.oa:
-            report.render_json()
-        if config.output and ".csv" in config.output or config.output and config.oa:
-            report.render_csv()
-        if config.output and ".html" in config.output or config.output and config.oa:
-            report.render_html()
-        if (
-            config.output and not ("json" in config.output or "csv" in config.output or "html" in config.output)
-        ) and not config.oa:
-            logger.error("Only JSON, CSV and HTML are the only supported output types.")
-
-    return s
+    if config.output and ".json" in config.output or config.output and config.oa:
+        report.render_json()
+    if config.output and ".csv" in config.output or config.output and config.oa:
+        report.render_csv()
+    if config.output and ".html" in config.output or config.output and config.oa:
+        report.render_html()
+    if (
+        config.output and not ("json" in config.output or "csv" in config.output or "html" in config.output)
+    ) and not config.oa:
+        logger.error("Only JSON, CSV and HTML are the only supported output types.")
 
 
 def init_logging(verbose: bool = False, debug: bool = False, logfile: Optional[str] = None) -> logging.Logger:
@@ -161,7 +167,6 @@ class Config(object):
     mkcred: bool
     contributors: bool
     dump: bool
-    validate: bool
     resume: bool
     shodan_query: Optional[str]
     output: Optional[str]
@@ -195,12 +200,7 @@ class Config(object):
     def _validate_args(self, ap: argparse.ArgumentParser) -> None:
         logger = logging.getLogger("default_hunter")
         if (
-            not self.validate
-            and not self.contributors
-            and not self.dump
-            and not self.shodan_query
-            and not self.mkcred
-            and not self.resume
+            not self.contributors and not self.dump and not self.shodan_query and not self.mkcred and not self.resume
         ) and not self.target:
             ap.print_help()
             quit()
@@ -226,7 +226,7 @@ class Config(object):
 
         if self.verbose:
             logger.setLevel(logging.INFO)
-        if self.debug or self.validate:
+        if self.debug:
             logger.setLevel(logging.DEBUG)
 
         self.useragent = {"User-Agent": str(self.useragent)} if self.useragent else {}
@@ -246,7 +246,7 @@ class Config(object):
             sys.exit()
 
 
-def parse_args() -> Dict[str, Any]:
+def parse_args() -> tuple[argparse.Namespace, argparse.ArgumentParser]:
     ap = argparse.ArgumentParser(description=f"Default credential scanner v{version.__version__}")
     ap.add_argument("--category", "-c", type=str, help="Category of default creds to scan for", default=None)
     ap.add_argument("--contributors", action="store_true", help="Display cred file contributors")
@@ -299,32 +299,22 @@ def parse_args() -> Dict[str, Any]:
     ap.add_argument("--threads", "-t", type=int, help="Number of threads, default=10", default=10)
     ap.add_argument("--timeout", type=int, help="Timeout in seconds for a request, default=10", default=10)
     ap.add_argument("--useragent", "-ua", type=str, help="User agent string to use", default=None)
-    ap.add_argument("--validate", action="store_true", help="Validate creds files", default=False)
     ap.add_argument("--verbose", "-v", action="store_true", help="Verbose output", default=False)
 
-    # initial parse to see if an option not requiring a target was used
-    args, unknown = ap.parse_known_args()
-    if (
-        not args.dump
-        and not args.contributors
-        and not args.mkcred
-        and not args.resume
-        and not args.shodan_query
-        and not args.validate
-    ):
-        ap.add_argument(
-            "target",
-            type=str,
-            help="Target to scan. Can be IP, subnet, hostname, nmap xml file, text file or proto://host:port",
-            default=None,
-        )
+    ap.add_argument(
+        "target",
+        type=str,
+        help="Target to scan. Can be IP, subnet, hostname, nmap xml file, text file or proto://host:port",
+        default=None,
+        nargs="?",
+    )
 
     # Enable shell completion
     argcomplete.autocomplete(ap, always_complete_options=False)
 
     args = ap.parse_args()
 
-    return {"args": args, "parser": ap}
+    return args, ap
 
 
 def get_protocol(filename: str) -> str:

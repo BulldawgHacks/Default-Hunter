@@ -1,0 +1,2 @@
+class DryRun(Exception):
+    pass

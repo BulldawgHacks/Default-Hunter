@@ -12,6 +12,7 @@ from . import scanners
 from .target import Target
 from .scanners.scanner import Scanner
 from .keyboard_input import check_for_spacebar
+from .exceptions import DryRun
 
 if TYPE_CHECKING:
     from .core import Config
@@ -229,8 +230,8 @@ class ScanEngine(object):
         while self.fingerprints.qsize() > 0:
             fp = self.fingerprints.get()
             if fp is not None:
-                self.logger.info(fp.target)
-        quit()
+                print(fp.target)
+        raise DryRun
 
     def _get_queue(self, name: str) -> OurQueue:
         self.logger.debug(f"Using multiprocessing queue for {name}")
